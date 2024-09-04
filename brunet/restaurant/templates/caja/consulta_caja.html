@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1>Consulta de Caja</h1>
+    <h3>Caja abierta por: {{ caja.usuario.username }}</h3>
+    <p>Apertura: {{ caja.apertura|date:"d/m/Y H:i" }}</p>
+    {% if caja.cierre %}
+        <p>Cierre: {{ caja.cierre|date:"d/m/Y H:i" }}</p>
+    {% endif %}
+
+    <h4>Transacciones:</h4>
+    {% if transacciones and transacciones.exists %}
+        <ul>
+            {% for transaccion in transacciones %}
+                <li>{{ transaccion.tipo }} - ${{ transaccion.monto }} - {{ transaccion.descripcion }} ({{ transaccion.fecha|date:"d/m/Y H:i" }})</li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No hay transacciones registradas.</p>
+    {% endif %}
+
+    <h4>Total Ingresado: ${{ monto_total }}</h4>
+
+    <h4>Pagos:</h4>
+    {% if pagos and pagos.exists %}
+        <ul>
+            {% for pago in pagos %}
+                <li>Pago de Pedido N° {{ pago.pedido.id }} - Monto: ${{ pago.monto }} - Método: {{ pago.metodo_pago }}</li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No se han registrado pagos.</p>
+    {% endif %}
+
+    {% if caja.usuario == request.user %}
+        <a href="{% url 'home' %}" class="btn btn-primary mt-3">Volver a Inicio</a>
+        <a href="{% url 'pedidos_activos' %}" class="btn btn-secondary mt-3">Ir a Pedidos Activos</a>
+    {% endif %}
+</div>
+{% endblock %}

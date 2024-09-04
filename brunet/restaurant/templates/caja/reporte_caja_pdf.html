@@ -1,0 +1,109 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Reporte de Caja #{{ caja.id }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 20mm;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .content {
+            padding: 20px;
+            background-color: #ffffff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            max-width: 210mm; /* Ajuste a tamaño A4 */
+            margin: 20px auto;
+            box-sizing: border-box;
+        }
+        h1, h2 {
+            color: #333;
+            text-align: center;
+            margin: 0;
+            padding: 10px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f4f4f4;
+            font-weight: bold;
+        }
+        #total-final {
+            font-weight: bold;
+            text-align: right;
+        }
+        .summary-info p {
+            margin: 5px 0;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="content">
+        <h1>Reporte de Caja #{{ caja.id }}</h1>
+        <div class="summary-info">
+            <p>Usuario: {{ caja.usuario.username }}</p>
+            <p>Apertura: {{ caja.apertura|date:"d/m/Y H:i" }}</p>
+            <p>Cierre: {{ caja.cierre|date:"d/m/Y H:i" }}</p>
+            <p>Total Inicial: ${{ caja.total_inicial }}</p>
+            <p>Total Final: $<span id="total-final"></span></p>
+        </div>
+
+        <h2>Transacciones</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Descripción</th>
+                    <th>Monto</th>
+                    <th>Tipo</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for transaccion in caja.transacciones.all %}
+                    <tr>
+                        <td>{{ transaccion.fecha|date:"d/m/Y H:i" }}</td>
+                        <td>{{ transaccion.descripcion }}</td>
+                        <td class="monto">${{ transaccion.monto }}</td>
+                        <td>{{ transaccion.tipo|title }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            let totalFinal = 0;
+            document.querySelectorAll('.monto').forEach(function(element) {
+                const monto = parseFloat(element.textContent.replace('$', '').replace(',', ''));
+                if (!isNaN(monto)) {
+                    totalFinal += monto;
+                }
+            });
+            document.getElementById('total-final').textContent = totalFinal.toFixed(2);
+        });
+    </script>
+</body>
+</html>

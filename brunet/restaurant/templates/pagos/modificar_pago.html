@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1>Modificar Pago</h1>
+    <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label for="pedido" class="form-label">Pedido</label>
+            <input type="text" class="form-control" value="{{ pago.pedido.id }} - {{ pago.pedido.detalle }}" disabled>
+        </div>
+        <div class="mb-3">
+            <label for="metodo_pago" class="form-label">Método de Pago</label>
+            <select name="metodo_pago" id="metodo_pago" class="form-select">
+                <option value="efectivo" {% if pago.metodo_pago == 'efectivo' %}selected{% endif %}>Efectivo</option>
+                <option value="tarjeta" {% if pago.metodo_pago == 'tarjeta' %}selected{% endif %}>Tarjeta</option>
+                <option value="transferencia" {% if pago.metodo_pago == 'transferencia' %}selected{% endif %}>Transferencia</option>
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,197 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Restaurante Brunet</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+        }
+        .navbar {
+            background-color: #c0392b;
+        }
+        .navbar-brand, .nav-link {
+            color: #fff !important;
+        }
+        .hero {
+            position: relative;
+            background: url('{% static "images/Brunet_logo_fondo.jpg" %}') no-repeat center center;
+            background-size: cover;
+            height: 70vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #b2aeae;
+            text-align: center;
+            text-shadow: 2px 2px 4px rgba(64, 1, 1, 0.8); /* Añade sombra al texto */
+        }
+        .hero h1 {
+            font-size: 4rem;
+            font-weight: 700;
+        }
+        .hero p {
+            font-size: 1.5rem;
+        }
+        .menu-card {
+            border: none;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        .menu-card img {
+            border-bottom: 5px solid #c0392b;
+        }
+        .menu-card-title {
+            font-weight: 700;
+            color: #c0392b;
+        }
+        .btn-primary {
+            background-color: #e67e22;
+            border-color: #e67e22;
+        }
+        .btn-primary:hover {
+            background-color: #d35400;
+            border-color: #d35400;
+        }
+        .table-status {
+            margin-top: 40px;
+        }
+        .table-status .table-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+            background-color: #fff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .table-status .table-card h5 {
+            font-size: 1.5rem;
+            color: #c0392b;
+            margin-bottom: 10px;
+        }
+        .table-status .table-card p {
+            font-size: 1rem;
+            color: #555;
+        }
+        .table-status .table-card.available {
+            border-left: 5px solid #27ae60;
+        }
+        .table-status .table-card.occupied {
+            border-left: 5px solid #e74c3c;
+        }
+        .table-status .table-card.reserved {
+            border-left: 5px solid #f39c12;
+        }
+        /* Estilos para el botón de WhatsApp */
+        .whatsapp-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        .whatsapp-button img {
+            width: 60px;
+            height: 60px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">Restaurante BRUNET</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#menu">Menú</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#mesas">Mesas Disponibles</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'login' %}">Personal</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+   
+    <section class="hero">
+        <div>
+            <h1>Bienvenido a Nuestro Restaurante</h1>
+            <p class="lead"><h2>Descubre sabores únicos en un ambiente inigualable</h2></p>
+        </div>
+    </section>
+
+    
+    <section id="mesas" class="container table-status">
+        <h2 class="text-center my-4">Mesas Disponibles</h2>
+        <div class="row">
+            {% for mesa in mesas %}
+                <div class="col-md-4">
+                    <div class="table-card {% if mesa.estado == 'disponible' %}available{% elif mesa.estado == 'ocupada' %}occupied{% else %}reserved{% endif %}">
+                        <h5>Mesa {{ mesa.numero_mesa }}</h5>
+                        <p>Capacidad: {{ mesa.capacidad }} personas</p>
+                        <p>{{ mesa.get_estado_display }}</p>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    
+    <section id="menu" class="container my-5">
+        <h2 class="text-center my-4">Nuestro Menú</h2>
+        <div class="row">
+            {% for categoria, items in menu_items.items %}
+                <h3 class="text-center">{{ categoria }}</h3>
+                {% for item in items %}
+                    <div class="col-md-4">
+                        <div class="card menu-card">
+                            {% if item.imagen %}
+                                <img src="{{ item.imagen.url }}" class="card-img-top" alt="{{ item.nombre_plato }}">
+                            {% else %}
+                                <img src="/static/images/default_image.png" class="card-img-top" alt="Imagen por defecto">
+                                <p class="card-img-top text-center text-muted">El Chef aún no decide que foto poner.</p>
+                            {% endif %}
+                            <div class="card-body">
+                                <h5 class="card-title menu-card-title">{{ item.nombre_plato }}</h5>
+                                <p class="card-text">{{ item.descripcion }}</p>
+                                <p class="card-text"><strong>${{ item.precio }}</strong></p>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% endfor %}
+        </div>
+    </section>
+
+    
+    <div class="whatsapp-button"> 
+        <a href="https://wa.me/3875795436" target="_blank">    
+            <img src="{% static 'images/whatsapp-icon.png' %}" alt="WhatsApp">
+        </a>
+    </div>
+
+    <footer class="text-center py-4">
+        <p>&copy; 2024 Restaurante Moderno. Todos los derechos reservados.</p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1>Apertura de Caja</h1>
+    
+    {% if error_message %}
+        <div class="alert alert-danger">
+            {{ error_message }}
+        </div>
+    {% endif %}
+    
+    <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label for="total_inicial" class="form-label">Total Inicial</label>
+            {{ form.total_inicial }}
+        </div>
+        <button type="submit" class="btn btn-primary">Abrir Caja</button>
+    </form>
+</div>
+{% endblock %}

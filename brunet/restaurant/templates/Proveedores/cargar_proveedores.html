@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="mb-4">Cargar Proveedores Masivamente</h2>
+
+    {% if messages %}
+    <div class="alert alert-dismissible fade show mt-3" role="alert">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">
+            {{ message }}
+        </div>
+        {% endfor %}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endif %}
+
+    {% if errores %}
+    <div class="alert alert-danger mt-3">
+        <h4>Errores encontrados:</h4>
+        <ul>
+            {% for error in errores %}
+            <li>{{ error }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    {% if advertencias %}
+    <div class="alert alert-warning mt-3">
+        <h4>Advertencias:</h4>
+        <ul>
+            {% for advertencia in advertencias %}
+            <li>{{ advertencia }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <div class="card">
+        <div class="card-body">
+            <form method="post" enctype="multipart/form-data" id="uploadForm">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label for="archivo_excel" class="form-label">Subir Archivo Excel</label>
+                    <input type="file" class="form-control" id="archivo_excel" name="archivo_excel" accept=".xlsx, .xls">
+                </div>
+                <button type="submit" class="btn btn-success">Cargar Proveedores</button>
+                <a href="{% url 'descargar_plantilla_proveedores' %}" class="btn btn-info">Descargar Plantilla</a>
+                <a href="{% url 'proveedores' %}" class="btn btn-secondary">Cancelar</a>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('uploadForm').addEventListener('submit', function(event) {
+        var fileInput = document.getElementById('archivo_excel');
+        if (!fileInput.value) {
+            event.preventDefault();
+            alert('Por favor, selecciona un archivo Excel antes de enviar.');
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1>Detalles del Pago</h1>
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">Pago #{{ pago.id }}</h5>
+            <p><strong>Monto:</strong> ${{ pago.monto }}</p>
+            <p><strong>Método de Pago:</strong> {{ pago.metodo_pago }}</p>
+            <p><strong>Fecha y Hora:</strong> {{ pago.fecha_pago }}</p>
+            <p><strong>Descripción:</strong> {{ pago.descripcion }}</p>
+        </div>
+    </div>
+    <a href="{% url 'consulta_caja' caja_abierta.id %}" class="btn btn-secondary mt-3">Volver a Consulta de Caja</a>
+</div>
+{% endblock %}

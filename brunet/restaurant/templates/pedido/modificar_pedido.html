@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="text-center">Modificar Pedido #{{ pedido.id }} para la Mesa {{ pedido.mesa.numero_mesa }}</h1>
+
+    <form method="post" class="form-container" style="max-width: 800px; margin: 0 auto;">
+        {% csrf_token %}
+        <div class="form-group mb-3">
+            <label for="estado">Estado del Pedido:</label>
+            <select id="estado" name="estado" class="form-control">
+                <option value="pendiente" {% if pedido.estado == 'pendiente' %}selected{% endif %}>Pendiente</option>
+                <option value="preparando" {% if pedido.estado == 'preparando' %}selected{% endif %}>Preparando</option>
+                <option value="servido" {% if pedido.estado == 'servido' %}selected{% endif %}>Servido</option>
+                <option value="pagado" {% if pedido.estado == 'pagado' %}selected{% endif %}>Pagado</option>
+            </select>
+        </div>
+
+        <h3 class="text-center mt-4">Modificar Platos:</h3>
+        {{ formset.management_form }}
+
+        <div id="formset-container">
+            {% for form in formset %}
+            <div class="detalle-pedido mb-3 p-3 bg-white rounded shadow-sm">
+                <div class="form-group mb-2">
+                    <label for="categoria-{{ forloop.counter0 }}">Filtrar por Categoría:</label>
+                    <select id="categoria-{{ forloop.counter0 }}" class="form-control">
+                        <option value="">Selecciona una Categoría</option>
+                        {% for categoria in categorias %}
+                            <option value="{{ categoria.id }}">{{ categoria.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group mb-2">
+                    {{ form.menu.label_tag }} 
+                    {{ form.menu }}
+                </div>
+                <div class="form-group mb-2">
+                    {{ form.cantidad.label_tag }} 
+                    {{ form.cantidad }}
+                </div>
+                <div class="form-group mb-2">
+                    {{ form.precio_unitario.label_tag }} 
+                    {{ form.precio_unitario }}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="text-center">
+            <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
