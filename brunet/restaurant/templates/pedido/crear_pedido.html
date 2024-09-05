@@ -1,148 +1,203 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="container mt-5">
+<div class="container">
     <h1 class="text-center">Crear Pedido para la Mesa {{ mesa.numero_mesa }}</h1>
+    {% load static %}
 
-    <div class="form-container" style="max-width: 800px; margin: 0 auto;">
-        <form id="pedidoForm" method="post">
-            {% csrf_token %}
-            <div class="form-group mb-3">
-                <label for="mesa">Mesa</label>
-                <select id="mesa" name="mesa" class="form-control" required>
-                    <option value="{{ mesa.id }}" selected>Mesa {{ mesa.numero_mesa }}</option>
-                </select>
-            </div>
-            <div class="form-group mb-3">
-                <label for="estado">Estado</label>
-                <select id="estado" name="estado" class="form-control">
-                    <option value="preparando">Preparando</option>
-                </select>
-            </div>
+    <form id="pedidoForm" class="mb-5">
+        <div class="mb-3">
+            <label for="mesa" class="form-label">Mesa</label>
+            <input type="text" id="mesa" value="Mesa {{ mesa.numero_mesa }}" readonly class="form-control">
+        </div>
 
-            <h3 class="text-center mt-4">Seleccionar Platos:</h3>
+        <div class="mb-3">
+            <label for="estado" class="form-label">Estado</label>
+            <input type="text" id="estado" value="Preparando" readonly class="form-control">
+        </div>
 
-            <div class="form-group mb-3">
-                <label for="categoria">Filtrar por Categoría:</label>
-                <select id="categoria" class="form-control categoria-select">
-                    <option value="">Selecciona una Categoría</option>
-                    {% for categoria in categorias %}
-                        <option value="{{ categoria.id }}">{{ categoria.nombre }}</option>
-                    {% endfor %}
-                </select>
+        <h3>Seleccionar Platos:</h3>
+        <label for="categoriaFiltro">Filtrar por Categoría:</label>
+        <select id="categoriaFiltro" class="form-select mb-3">
+            <option value="0">Todas</option>
+            {% for categoria in categorias %}
+            <option value="{{ categoria.id }}">{{ categoria.nombre }}</option>
+            {% endfor %}
+        </select>
+        <div id="platosContainer" class="row row-cols-1 row-cols-md-3 g-4">
+            {% for plato in platos %}
+            <div class="col">
+                    <div class="card h-100">
+                        {% if plato.imagen and plato.imagen.url %}
+                            <img src="{{ plato.imagen.url }}" class="card-img-top img-fluid" alt="{{ plato.nombre_plato }}">
+                        {% else %}
+                            <img src="{% static 'img/default_plato.jpg' %}" class="card-img-top img-fluid" alt="Imagen no disponible">
+                        {% endif %}
+                        <div class="card-body">
+                            <h5 class="card-title">{{ plato.nombre_plato }}</h5>
+                            <p class="card-text">${{ plato.precio }}</p>
+                            <button class="btn btn-primary agregar-pedido" data-id="{{ plato.id }}" data-precio="{{ plato.precio }}">Agregar al Pedido</button>
+                        
+                    </div>
+                </div>
             </div>
+            {% endfor %}
+        </div>
 
-            <div id="platos-container" class="row">
-                <!-- Aquí se mostrarán los platos filtrados por categoría -->
-            </div>
-
-            <h3 class="text-center mt-4">Pedido Seleccionado:</h3>
-            <div id="pedido-seleccionado">
-                <!-- Aquí se agregan los platos seleccionados con cantidad -->
-            </div>
-
-            <div class="text-center mt-3">
-                <button type="submit" class="btn btn-primary">Crear Pedido</button>
-                <a href="{% url 'home' %}" class="btn btn-secondary">Cancelar</a>
-            </div>
-        </form>
-    </div>
+        <h3 class="mt-5">Resumen del Pedido</h3>
+        <ul id="resumenPedido" class="list-group mb-4"></ul>
+        <button type="submit" class="btn btn-success">Crear Pedido</button>
+    </form>
 </div>
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script type="text/javascript">
-    $(document).ready(function() {
-        var platosContainer = $('#platos-container');
-        var pedidoSeleccionado = $('#pedido-seleccionado');
 
-        // Filtrar platos por categoría
-        $('.categoria-select').on('change', function() {
-            var categoriaId = $(this).val();
+<style>
+    
+    body {
+        font-family: Arial, sans-serif;
+        background-color: #f8f9fa;
+        margin: 0;
+        padding: 0;
+    }
 
-            $.ajax({
-                url: "{% url 'filtrar_platos_por_categoria' %}",
-                data: {
-                    'categoria_id': categoriaId
-                },
-                success: function(data) {
-                    platosContainer.html(data);  // Cargar las tarjetas de platos en el contenedor
-                }
-            });
-        });
+    .container {
+        width: 90%;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+    }
 
-        // Función para agregar platos al pedido
-        $(document).on('click', '.agregar-plato', function() {
-            var platoId = $(this).data('id');
-            var nombrePlato = $(this).data('nombre');
-            var precioPlato = $(this).data('precio');
-            var imagenPlato = $(this).data('imagen');
-            var cantidad = 1; // Iniciar la cantidad en 1
+    h1 {
+        text-align: center;
+        margin-bottom: 20px;
+        color: #333;
+    }
 
-            // Verificar si el plato ya está agregado
-            var existe = pedidoSeleccionado.find('div[data-id="' + platoId + '"]');
-            if (existe.length === 0) {
-                // Crear el HTML para agregar el plato seleccionado al pedido
-                var pedidoHtml = `
-                    <div class="pedido-item mb-3" data-id="${platoId}">
-                        <div class="d-flex justify-content-between">
-                            <img src="${imagenPlato}" alt="${nombrePlato}" style="width: 50px; height: 50px;">
-                            <div class="pedido-nombre">${nombrePlato}</div>
-                            <div class="pedido-precio">${precioPlato}</div>
-                            <div class="pedido-cantidad">
-                                <button class="btn btn-sm btn-danger decremento">-</button>
-                                <input type="text" value="${cantidad}" readonly style="width: 30px; text-align: center;">
-                                <button class="btn btn-sm btn-success incremento">+</button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                pedidoSeleccionado.append(pedidoHtml);
-            }
-        });
+    form {
+        background-color: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
 
-        // Incrementar la cantidad
-        $(document).on('click', '.incremento', function() {
-            var input = $(this).siblings('input');
-            var currentVal = parseInt(input.val());
-            input.val(currentVal + 1);
-        });
+    .form-control, .form-select {
+        padding: 10px;
+        border-radius: 4px;
+        margin-bottom: 15px;
+        border: 1px solid #ccc;
+    }
 
-        // Decrementar la cantidad
-        $(document).on('click', '.decremento', function() {
-            var input = $(this).siblings('input');
-            var currentVal = parseInt(input.val());
-            if (currentVal > 1) {
-                input.val(currentVal - 1);
-            }
-        });
+    .row-cols-1, .row-cols-md-3 {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+    }
 
-        // Enviar el pedido al servidor
-        $('#pedidoForm').submit(function(event) {
-            event.preventDefault(); // Prevenir el envío tradicional del formulario
+    .card {
+        background-color: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+        width: 100%;
+        transition: transform 0.2s;
+    }
 
-            // Aquí puedes procesar el pedido y enviar los datos al servidor
-            var pedidoData = [];
-            pedidoSeleccionado.find('.pedido-item').each(function() {
-                var platoId = $(this).data('id');
-                var cantidad = $(this).find('input').val();
-                pedidoData.push({ plato_id: platoId, cantidad: cantidad });
-            });
+    .card:hover {
+        transform: translateY(-5px);
+    }
 
-            $.ajax({
-                url: "{% url 'crear_pedido' mesa.id %}",
-                type: "POST",
-                data: {
-                    csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val(),
-                    pedido: JSON.stringify(pedidoData)
-                },
-                success: function(response) {
-                    if (response.success) {
-                        alert('Pedido creado con éxito.');
-                        window.location.href = "{% url 'pedidos_activos' %}";
-                    }
-                }
-            });
-        });
-    });
-</script>
+    .card img {
+        height: 200px;
+        object-fit: cover;
+        border-radius: 8px 8px 0 0;
+    }
+
+    .card-body {
+        padding: 15px;
+    }
+
+    .card-title {
+        font-size: 1.2rem;
+        margin-bottom: 10px;
+    }
+
+    .card-text {
+        color: #555;
+        margin-bottom: 15px;
+    }
+
+    .btn {
+        display: inline-block;
+        padding: 10px 20px;
+        border-radius: 4px;
+        text-align: center;
+        text-decoration: none;
+        font-size: 1rem;
+        cursor: pointer;
+    }
+
+    .btn-primary {
+        background-color: #007bff;
+        color: white;
+        border: none;
+    }
+
+    .btn-success {
+        background-color: #28a745;
+        color: white;
+        border: none;
+    }
+
+    
+    #resumenPedido li {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px;
+        margin-bottom: 5px;
+        background-color: #f8f9fa;
+        border-radius: 5px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    
+    .cantidad-control {
+        display: flex;
+        align-items: center;
+    }
+
+    .btn-cantidad {
+        padding: 5px 10px;
+        font-size: 1.2rem;
+        font-weight: bold;
+        border: none;
+        background-color: #007bff;
+        color: white;
+        border-radius: 4px;
+        margin: 0 5px;
+        cursor: pointer;
+    }
+
+    .btn-cantidad:hover {
+        background-color: #0056b3;
+    }
+
+    .cantidad-text {
+        margin: 0 10px;
+        font-size: 1.2rem;
+    }
+
+    
+    @media (max-width: 768px) {
+        .card {
+            width: 100%;
+        }
+
+        .row-cols-1, .row-cols-md-3 {
+            flex-direction: column;
+        }
+    }
+</style>
+
+<script src="{% static 'js/pedido.js' %}"></script>
 {% endblock %}

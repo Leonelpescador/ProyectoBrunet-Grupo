@@ -18,14 +18,21 @@ class CierreCajaForm(forms.ModelForm):
 
 
 #pedido 
+from django.forms import inlineformset_factory
+from .models import Pedido, DetallePedido
+
 class PedidoForm(forms.ModelForm):
     class Meta:
         model = Pedido
-        fields = ['mesa', 'estado']  # Incluye campos adicionales necesarios
+        fields = ['usuario', 'mesa', 'total', 'estado']  # O los campos que correspondan
 
-# Formulario para Modificar Pedido
-from django import forms
-from .models import Pedido
+class DetallePedidoForm(forms.ModelForm):
+    class Meta:
+        model = DetallePedido
+        fields = ['menu', 'cantidad', 'precio_unitario']
+
+# Creación del FormSet
+PedidoFormSet = inlineformset_factory(Pedido, DetallePedido, form=DetallePedidoForm, extra=1, can_delete=True)
 
 class ModificarPedidoForm(forms.ModelForm):
     class Meta:

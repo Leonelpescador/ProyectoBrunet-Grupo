@@ -47,50 +47,42 @@ from .models import Pedido, DetallePedido
 # Formset para DetallePedido
 DetallePedidoFormSet = inlineformset_factory(Pedido, DetallePedido, form=DetallePedidoForm, extra=1)
 
-from django.contrib import messages  # Importamos mensajes para feedback visual
 
-@login_required
+
+from django.shortcuts import render, get_object_or_404, redirect
+from django.http import JsonResponse
+from django.contrib.auth.decorators import login_required
+from .models import Pedido, DetallePedido, Mesa, Menu
+import json
+
 def crear_pedido(request, mesa_id):
     mesa = get_object_or_404(Mesa, id=mesa_id)
-    PedidoFormSet = inlineformset_factory(Pedido, DetallePedido, form=DetallePedidoForm, extra=1)
-    categorias = Categoria.objects.all()
+    categorias = Categoria.objects.all()  # Filtrar por categorías
+    platos = Menu.objects.filter(disponible=True)  # Todos los platos disponibles
 
     if request.method == 'POST':
-        print("Solicitud POST recibida.") 
-        pedido_form = PedidoForm(request.POST)
-        formset = PedidoFormSet(request.POST)
-
-        if pedido_form.is_valid() and formset.is_valid():
-            pedido = pedido_form.save(commit=False)
-            pedido.usuario = request.user
-            pedido.mesa = mesa
-            pedido.total = 0
-            pedido.save()
-
-            detalles = formset.save(commit=False)
-            for detalle in detalles:
-                detalle.pedido = pedido
-                detalle.save()
-
-            pedido.total = sum(detalle.subtotal for detalle in pedido.detalles.all())
-            pedido.save()
-
-            messages.success(request, 'Pedido creado con éxito.')
-            return JsonResponse({'success': True})
-        else:
-            print("Formulario no válido.", pedido_form.errors, formset.errors)
-            return JsonResponse({'success': False, 'errors': formset.errors})
-    
-    else:
-        pedido_form = PedidoForm()
-        formset = PedidoFormSet()
+        # Procesar el pedido enviado por el usuario
+        pedido_data = json.loads(request.body.decode('utf-8'))
+        pedido = Pedido.objects.create(mesa=mesa, usuario=request.user, estado='preparando', total=0)
+        
+        # Agregar detalles del pedido
+        for detalle in pedido_data['platos']:
+            plato = get_object_or_404(Menu, id=detalle['plato_id'])
+            cantidad = detalle['cantidad']
+            DetallePedido.objects.create(pedido=pedido, menu=plato, cantidad=cantidad, precio_unitario=plato.precio, subtotal=plato.precio * cantidad)
+        
+        # Calcular el total
+        pedido.total = sum(d.subtotal for d in pedido.detalles.all())
+        pedido.save()
+        return JsonResponse({'success': True})
 
     return render(request, 'pedido/crear_pedido.html', {
-        'pedido_form': pedido_form,
-        'formset': formset,
         'mesa': mesa,
         'categorias': categorias,
+        'platos': platos,
     })
+
+
 
 
 @login_required
@@ -808,23 +800,21 @@ from .models import Menu
 
 def filtrar_platos_por_categoria(request):
     categoria_id = request.GET.get('categoria_id')
-    if categoria_id:
-        platos = Menu.objects.filter(categoria_id=categoria_id, disponible=True)
-        html = ''
-        for plato in platos:
-            html += f'''
-            <div class="card" style="width: 18rem;">
-                <img src="{plato.imagen.url}" class="card-img-top" alt="{plato.nombre_plato}">
-                <div class="card-body">
-                    <h5 class="card-title">{plato.nombre_plato}</h5>
-                    <p class="card-text">{plato.descripcion}</p>
-                    <p class="card-text"><strong>${plato.precio}</strong></p>
-                    <button class="btn btn-primary agregar-plato" data-id="{plato.id}" data-nombre="{plato.nombre_plato}" data-precio="{plato.precio}" data-imagen="{plato.imagen.url}">Agregar al Pedido</button>
-                </div>
+    platos = Menu.objects.filter(categoria_id=categoria_id, disponible=True) if categoria_id != '0' else Menu.objects.filter(disponible=True)
+    html = ''
+    for plato in platos:
+        html += f'''
+        <div class="card" style="width: 18rem; margin-right: 10px;">
+            <img src="{plato.imagen.url}" class="card-img-top" alt="{plato.nombre_plato}">
+            <div class="card-body">
+                <h5 class="card-title">{plato.nombre_plato}</h5>
+                <p class="card-text">${plato.precio}</p>
+                <button class="btn btn-primary agregar-pedido" data-id="{plato.id}" data-precio="{plato.precio}">Agregar al Pedido</button>
             </div>
-            '''
-        return HttpResponse(html)
-    return HttpResponse('<p>No hay platos disponibles</p>')
+        </div>
+        '''
+    return HttpResponse(html)
+
 
 
 
