@@ -46,12 +46,17 @@
                             <td>
                                 {% if not pedido.en_proceso %}
                                     <a href="{% url 'eliminar_pedido' pedido.id %}" class="btn btn-danger mb-1">Eliminar</a>
+                                    
                                     {% if pedido.estado == 'pendiente' %}
-                                        <a href="{% url 'registrar_pago' pedido.id %}" class="btn btn-success mb-1">Registrar Pago</a>
+                                        {% if request.user.is_superuser or request.user.tipo_usuario == 'admin' or request.user.tipo_usuario == 'cajero' %}
+                                            <a href="{% url 'registrar_pago' pedido.id %}" class="btn btn-success mb-1">Registrar Pago</a>
+                                        {% endif %}
                                     {% elif pedido.estado == 'preparando' %}
                                         <a href="{% url 'marcar_servido' pedido.id %}" class="btn btn-warning mb-1">Marcar como Servido</a>
                                     {% elif pedido.estado == 'servido' %}
-                                        <a href="{% url 'registrar_pago' pedido.id %}" class="btn btn-success mb-1">Registrar Pago</a>
+                                        {% if request.user.is_superuser or request.user.tipo_usuario == 'admin' or request.user.tipo_usuario == 'cajero' %}
+                                            <a href="{% url 'registrar_pago' pedido.id %}" class="btn btn-success mb-1">Registrar Pago</a>
+                                        {% endif %}
                                     {% endif %}
                                 {% else %}
                                     <span class="badge bg-info text-dark">En proceso por {{ pedido.usuario_procesando.username }}</span>

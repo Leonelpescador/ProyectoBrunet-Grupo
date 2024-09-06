@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+
+    <!-- Agregamos los enlaces arriba del todo -->
+    <div class="d-flex justify-content-between mb-4">
+        <a href="{% url 'crear_menu' %}" class="btn btn-primary">Crear Nuevo Plato</a>
+        <a href="{% url 'listar_menu' %}" class="btn btn-secondary">Ver Menú</a>
+    </div>
+
+    <h1 class="text-center mb-4">Pedidos Actuales por Mesa</h1>
+
+    <div class="row">
+        {% for mesa in mesas %}
+            <div class="col-md-4 mb-4">
+                <div class="card mesa-card {% if mesa.pedido_actual %}border-success{% else %}border-secondary{% endif %}">
+                    <div class="card-body">
+                        <h5 class="card-title text-center">Mesa {{ mesa.numero_mesa }}</h5>
+
+                        {% if mesa.pedido_actual %}
+                            <h6 class="text-center">Pedido Actual</h6>
+                            <ul class="list-group list-group-flush">
+                                {% for detalle in mesa.pedido_actual.detalles.all %}
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        {{ detalle.menu.nombre_plato }} - Cantidad: {{ detalle.cantidad }}
+                                    </li>
+                                {% endfor %}
+                            </ul>
+
+                            <div class="text-center mt-3">
+                                {% if mesa.pedido_actual.estado != 'servido' %}
+                                    <form method="post" class="marcar-servido-form" action="{% url 'marcar_servido' mesa.pedido_actual.id %}">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-success">Marcar como Servido</button>
+                                    </form>
+                                {% else %}
+                                    <div class="alert alert-success">
+                                        Pedido ya servido
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% else %}
+                            <div class="alert alert-info text-center">
+                                No hay pedidos para esta mesa.
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+    {% if not mesas %}
+        <div class="alert alert-info text-center">
+            No hay mesas con pedidos en este momento.
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Obtenemos todos los formularios de marcar servido
+        const marcarServidoForms = document.querySelectorAll('.marcar-servido-form');
+
+        marcarServidoForms.forEach(form => {
+            form.addEventListener('submit', function (e) {
+                e.preventDefault(); // Prevenir el envío automático
+
+                // Mostrar un diálogo de confirmación personalizado
+                if (confirm('¿El pedido fue marcado como servido? ¿Deseas ver los pedidos activos?')) {
+                    window.location.href = "{% url 'pedidos_activos' %}"; // Redirigir a pedidos activos
+                } else {
+                    // Si el usuario selecciona "No", se envía el formulario para marcar como servido sin redirigir
+                    fetch(form.action, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value
+                        }
+                    }).then(response => {
+                        if (response.ok) {
+                            // Actualizamos la interfaz para mostrar que el pedido fue servido
+                            const cardBody = form.closest('.card-body');
+                            cardBody.querySelector('.alert-success')?.remove();
+                            const successAlert = document.createElement('div');
+                            successAlert.classList.add('alert', 'alert-success');
+                            successAlert.textContent = 'Pedido ya servido';
+                            cardBody.appendChild(successAlert);
+
+                            // Ocultamos el botón de "Marcar como Servido"
+                            form.remove();
+                        } else {
+                            alert('Error al marcar el pedido como servido.');
+                        }
+                    }).catch(error => {
+                        console.error('Error:', error);
+                    });
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

@@ -7,6 +7,8 @@
     <h2 class="text-center my-4">Listado de Menús</h2>
     <a href="{% url 'crear_menu' %}" class="btn btn-primary mb-4">Agregar Nuevo Plato</a>
     <a href="{% url 'listar_categorias' %}" class="btn btn-primary mb-4">Crear Nueva Categoría</a>
+    <a href="{% url 'cocinero_dashboard' %}" class="btn btn-primary mb-4">Cocina</a>
+
 
     {% for categoria, items in menu_categorias.items %}
         <h3>{{ categoria }}</h3>

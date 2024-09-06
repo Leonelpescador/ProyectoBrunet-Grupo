@@ -87,33 +87,47 @@ def crear_pedido(request, mesa_id):
 
 @login_required
 def modificar_pedido(request, pedido_id):
+    
     pedido = get_object_or_404(Pedido, id=pedido_id)
-    PedidoFormSet = inlineformset_factory(Pedido, DetallePedido, form=DetallePedidoForm, extra=0)
-    categorias = Categoria.objects.all()  # Mover la obtención de categorías fuera del bloque if
+    mesa = pedido.mesa  
+
+
+    categorias = Categoria.objects.all()
+    platos = Menu.objects.all()
 
     if request.method == 'POST':
-        pedido_form = ModificarPedidoForm(request.POST, instance=pedido)
-        formset = PedidoFormSet(request.POST, instance=pedido)
-        
-        if pedido_form.is_valid() and formset.is_valid():
-            pedido_form.save()
-            formset.save()
-            
-            # Recalcular el total del pedido
-            pedido.total = sum(item.subtotal for item in pedido.detalles.all())
-            pedido.save()
-            
-            messages.success(request, 'Pedido modificado con éxito.')
-            return redirect('home')
+        if request.is_ajax():  #
+            data = request.POST
+            nuevos_detalles = data.get('detalles', [])
+            for detalle in nuevos_detalles:
+                menu_id = detalle.get('menu_id')
+                cantidad = detalle.get('cantidad')
+                plato = Menu.objects.get(id=menu_id)
+                detalle_pedido, created = DetallePedido.objects.get_or_create(
+                    pedido=pedido,
+                    menu=plato,
+                    defaults={'cantidad': cantidad, 'precio_unitario': plato.precio}
+                )
+                if not created:
+                    detalle_pedido.cantidad = cantidad
+                    detalle_pedido.save()
+
+            return JsonResponse({'success': True})
+
+        form = ModificarPedidoForm(request.POST, instance=pedido)
+        if form.is_valid():
+            form.save()
+            return redirect('pedidos_activos')
+
     else:
-        pedido_form = ModificarPedidoForm(instance=pedido)
-        formset = PedidoFormSet(instance=pedido)
-    
+        form = ModificarPedidoForm(instance=pedido)
+
     return render(request, 'pedido/modificar_pedido.html', {
-        'pedido_form': pedido_form,
-        'formset': formset,
         'pedido': pedido,
-        'categorias': categorias,  # Pasamos las categorías al contexto
+        'mesa': mesa,
+        'categorias': categorias,
+        'platos': platos,
+        'form': form
     })
 
 
@@ -1115,4 +1129,24 @@ def exportar_inventario(request):
 
     wb.save(response)
     return response
+
+
+#para la cocina 
+from django.shortcuts import render
+from .models import Mesa, Pedido
+
+def cocinero_dashboard(request):
+    # Obtener todas las mesas
+    mesas = Mesa.objects.all()
+
+    # Iterar sobre cada mesa y buscar su último pedido no pagado
+    for mesa in mesas:
+        mesa.pedido_actual = Pedido.objects.filter(mesa=mesa).exclude(estado='pagado').order_by('-fecha_pedido').first()
+
+    context = {
+        'mesas': mesas
+    }
+    return render(request, 'cocina/cocineros.html', context)
+
+
 

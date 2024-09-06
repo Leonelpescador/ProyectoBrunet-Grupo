@@ -3,20 +3,29 @@
 {% block content %}
 <div class="container mt-5">
     <h1>Apertura de Caja</h1>
+
+    {% if request.user.is_superuser or request.user.tipo_usuario == 'admin' or request.user.tipo_usuario == 'cajero' %}
     
-    {% if error_message %}
-        <div class="alert alert-danger">
-            {{ error_message }}
+        {% if error_message %}
+            <div class="alert alert-danger">
+                {{ error_message }}
+            </div>
+        {% endif %}
+        
+        <form method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="total_inicial" class="form-label">Total Inicial</label>
+                {{ form.total_inicial }}
+            </div>
+            <button type="submit" class="btn btn-primary">Abrir Caja</button>
+        </form>
+    
+    {% else %}
+        <div class="alert alert-warning">
+            No tienes permisos para abrir la caja.
         </div>
     {% endif %}
-    
-    <form method="post">
-        {% csrf_token %}
-        <div class="mb-3">
-            <label for="total_inicial" class="form-label">Total Inicial</label>
-            {{ form.total_inicial }}
-        </div>
-        <button type="submit" class="btn btn-primary">Abrir Caja</button>
-    </form>
 </div>
 {% endblock %}
+

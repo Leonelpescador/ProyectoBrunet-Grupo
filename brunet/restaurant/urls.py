@@ -29,7 +29,7 @@ from .views import (
     eliminar_compra,
     obtener_precio_plato,
     marcar_servido,
-    crear_categoria, eliminar_categoria, listar_categorias
+    crear_categoria, eliminar_categoria, listar_categorias, cocinero_dashboard
 )
 
 urlpatterns =[
@@ -114,6 +114,9 @@ urlpatterns =[
     path('categoria/', listar_categorias, name='listar_categorias'),
     path('categoria/crear/', crear_categoria, name='crear_categoria'),
     path('categoria/eliminar/<int:categoria_id>/', eliminar_categoria, name='eliminar_categoria'),
+    
+    #cocina
+    path('cocina/', cocinero_dashboard, name='cocinero_dashboard'),
     
     # Caja
     path('caja/pago/crear/', views.crear_pago, name='crear_pago'),

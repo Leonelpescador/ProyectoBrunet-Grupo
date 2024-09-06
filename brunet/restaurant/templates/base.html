@@ -4,20 +4,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
-    <!-- Bloque de título que puede ser reemplazado por las plantillas que extiendan esta -->
     <title>{% block title %}Brunet{% endblock %}</title>
-    
-    <!-- Inclusión de Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
     
-    <!-- Bloque adicional para incluir estilos específicos en otras páginas -->
     {% block extra_head %}{% endblock %}
 </head>
 <body>
 
-    <!-- Barra de navegación (Navbar) -->
     <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container-fluid">
             <a class="navbar-brand" href="{% url 'home' %}">BRUNET</a>
@@ -26,7 +20,26 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
-                    <!-- Elementos del menú de navegación -->
+                    
+                    <!-- Mostrar solo los enlaces específicos para cocineros -->
+                    {% if request.user.tipo_usuario == 'cocinero' %}
+                    <li class="nav-item {% if request.resolver_match.url_name == 'cocinero_dashboard' %}active{% endif %}">
+                        <a class="nav-link" href="{% url 'cocinero_dashboard' %}">Cocina</a>
+                    </li>
+                    <li class="nav-item {% if request.resolver_match.url_name == 'listar_menu' %}active{% endif %}">
+                        <a class="nav-link" href="{% url 'listar_menu' %}">Menú</a>
+                    </li>
+                    {% endif %}
+                    
+                    <!-- Mostrar solo los enlaces específicos para meseros -->
+                    {% if request.user.tipo_usuario == 'mesero' %}
+                    <li class="nav-item {% if request.resolver_match.url_name == 'cliente' %}active{% endif %}">
+                        <a class="nav-link" href="{% url 'cliente' %}">Página del Cliente</a>
+                    </li>
+                    {% endif %}
+
+                    <!-- Mostrar todos los enlaces para usuarios que no son cocineros ni meseros (cajero, admin, superusuario) -->
+                    {% if request.user.tipo_usuario != 'mesero' and request.user.tipo_usuario != 'cocinero' %}
                     <li class="nav-item {% if request.resolver_match.url_name == 'home' %}active{% endif %}">
                         <a class="nav-link" href="{% url 'home' %}">Inicio</a>
                     </li>
@@ -37,36 +50,40 @@
                         <a class="nav-link" href="{% url 'reservas' %}">Reservas</a>
                     </li>
                     <li class="nav-item {% if request.resolver_match.url_name == 'listar_menu' %}active{% endif %}">
-                        <a class="nav-link" href="{% url 'listar_menu' %}">Menú</a></li>
+                        <a class="nav-link" href="{% url 'listar_menu' %}">Menú</a>
+                    </li>
                     <li class="nav-item {% if request.resolver_match.url_name == 'lista_mesas' %}active{% endif %}">
-                        <a class="nav-link" href="{% url 'lista_mesas' %}">Mesas</a></li>
+                        <a class="nav-link" href="{% url 'lista_mesas' %}">Mesas</a>
+                    </li>
                     <li class="nav-item {% if request.resolver_match.url_name == 'inventario' %}active{% endif %}">
-                        <a class="nav-link" href="{% url 'inventario' %}">Inventario</a></li>
+                        <a class="nav-link" href="{% url 'inventario' %}">Inventario</a>
+                    </li>
                     <li class="nav-item {% if request.resolver_match.url_name == 'compras' %}active{% endif %}">
-                        <a class="nav-link" href="{% url 'compras' %}">Compras</a></li>
+                        <a class="nav-link" href="{% url 'compras' %}">Compras</a>
+                    </li>
                     <li class="nav-item {% if request.resolver_match.url_name == 'cliente' %}active{% endif %}">
-                        <a class="nav-link" href="{% url 'cliente' %}">Página del Cliente</a></li>
-                        <li class="nav-item ms-auto">
-                            <form id="logout-form" action="{% url 'logout' %}" method="POST" style="display: none;">
-                                {% csrf_token %}
-                            </form>
-                            <a class="nav-link" href="#" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
-                                Salir
-                            </a>
-                        </li>
-                        
-                    <!-- Aquí pueden añadir un botón o funcionalidad adicional -->
+                        <a class="nav-link" href="{% url 'cliente' %}">Página del Cliente</a>
+                    </li>
+                    {% endif %}
+
+                    <!-- Opción de cerrar sesión para todos los usuarios -->
+                    <li class="nav-item ms-auto">
+                        <form id="logout-form" action="{% url 'logout' %}" method="POST" style="display: none;">
+                            {% csrf_token %}
+                        </form>
+                        <a class="nav-link" href="#" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+                            Salir
+                        </a>
+                    </li>
                 </ul>
             </div>
         </div>
     </nav>
 
-    <!-- Contenido principal de la página -->
     <main>
         <!-- Bloque de contenido que puede ser reemplazado por las plantillas que extiendan esta -->
         {% block content %}
         {% if messages %}
-            <!-- Mostrar mensajes de éxito o error -->
             <div class="container mt-4">
                 {% for message in messages %}
                     <div class="alert alert-{{ message.tags }}">
@@ -76,17 +93,16 @@
             </div>
         {% endif %}
         
-        <!-- Contenedor principal para el contenido específico de cada página -->
+
         <div class="container">
             {% block page_content %}{% endblock %}
         </div>
         {% endblock %}
     </main>
 
-    <!-- Inclusión de Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-    <!-- Bloque adicional para incluir scripts específicos en otras páginas -->
+
     {% block extra_js %}{% endblock %}
 </body>
 </html>

@@ -245,8 +245,8 @@ class Caja(models.Model):
     usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE)
     apertura = models.DateTimeField(auto_now_add=True)
     cierre = models.DateTimeField(blank=True, null=True)
-    total_inicial = models.DecimalField(max_digits=8, decimal_places=2)
-    total_final = models.DecimalField(max_digits=8, decimal_places=2, blank=True, null=True)
+    total_inicial = models.DecimalField(max_digits=12, decimal_places=2)
+    total_final = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
     estado = models.CharField(max_length=10, default='abierta')
 
     def cerrar_caja(self, total_final):

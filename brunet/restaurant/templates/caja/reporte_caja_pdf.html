@@ -97,7 +97,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             let totalFinal = 0;
             document.querySelectorAll('.monto').forEach(function(element) {
-                const monto = parseFloat(element.textContent.replace('$', '').replace(',', ''));
+                const monto = parseFloat(element.textContent.replace(/[^\d.-]/g, '')); // Eliminar todos los caracteres no numéricos
                 if (!isNaN(monto)) {
                     totalFinal += monto;
                 }

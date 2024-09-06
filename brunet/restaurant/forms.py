@@ -9,7 +9,15 @@ class AperturaCajaForm(forms.ModelForm):
 
 # Formulario para Cierre de Caja
 class CierreCajaForm(forms.ModelForm):
-    total_final = forms.DecimalField(max_digits=8, decimal_places=2)
+    total_final = forms.DecimalField(max_digits=10, decimal_places=2)
+    
+    def clean_total_final(self):
+        total_final = self.cleaned_data.get('total_final')
+        if total_final <= 0:
+            raise forms.ValidationError("El total final debe ser un valor positivo.")
+        return total_final
+
+    
 
     class Meta:
         model = Caja
@@ -37,7 +45,7 @@ PedidoFormSet = inlineformset_factory(Pedido, DetallePedido, form=DetallePedidoF
 class ModificarPedidoForm(forms.ModelForm):
     class Meta:
         model = Pedido
-        fields = ['usuario', 'mesa', 'estado', 'total']
+        fields = ['estado']
 
 
 
