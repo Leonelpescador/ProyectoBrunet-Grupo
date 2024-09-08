@@ -24,20 +24,21 @@
             <option value="{{ categoria.id }}">{{ categoria.nombre }}</option>
             {% endfor %}
         </select>
+
         <div id="platosContainer" class="row row-cols-1 row-cols-md-3 g-4">
             {% for plato in platos %}
             <div class="col">
-                    <div class="card h-100">
-                        {% if plato.imagen and plato.imagen.url %}
-                            <img src="{{ plato.imagen.url }}" class="card-img-top img-fluid" alt="{{ plato.nombre_plato }}">
-                        {% else %}
-                            <img src="{% static 'img/default_plato.jpg' %}" class="card-img-top img-fluid" alt="Imagen no disponible">
-                        {% endif %}
-                        <div class="card-body">
-                            <h5 class="card-title">{{ plato.nombre_plato }}</h5>
-                            <p class="card-text">${{ plato.precio }}</p>
-                            <button class="btn btn-primary agregar-pedido" data-id="{{ plato.id }}" data-precio="{{ plato.precio }}">Agregar al Pedido</button>
-                        
+                <div class="card h-100">
+                    {% if plato.imagen and plato.imagen.url %}
+                        <img src="{{ plato.imagen.url }}" class="card-img-top img-fluid" alt="{{ plato.nombre_plato }}">
+                    {% else %}
+                        <img src="{% static 'img/default_plato.jpg' %}" class="card-img-top img-fluid" alt="Imagen no disponible">
+                    {% endif %}
+                    <div class="card-body">
+                        <h5 class="card-title">{{ plato.nombre_plato }}</h5>
+                        <p class="card-text">${{ plato.precio }}</p>
+                        <button class="btn btn-primary agregar-pedido" data-id="{{ plato.id }}" data-precio="{{ plato.precio }}">Agregar al Pedido</button>
+                        <span class="notificacion-agregado" style="display: none; color: green; font-size: 14px;">Plato agregado al pedido</span>
                     </div>
                 </div>
             </div>
@@ -50,9 +51,7 @@
     </form>
 </div>
 
-
 <style>
-    
     body {
         font-family: Arial, sans-serif;
         background-color: #f8f9fa;
@@ -148,7 +147,6 @@
         border: none;
     }
 
-    
     #resumenPedido li {
         display: flex;
         justify-content: space-between;
@@ -160,7 +158,6 @@
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
 
-    
     .cantidad-control {
         display: flex;
         align-items: center;
@@ -187,7 +184,6 @@
         font-size: 1.2rem;
     }
 
-    
     @media (max-width: 768px) {
         .card {
             width: 100%;

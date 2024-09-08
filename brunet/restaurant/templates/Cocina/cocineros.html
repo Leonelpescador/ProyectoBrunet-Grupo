@@ -1,105 +1,185 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="container mt-5">
+<div class="container">
+    <h1 class="text-center">Módulo de Cocina</h1>
+    <p class="text-center">Atención: Las órdenes cambiarán de color según el tiempo que llevan abiertas.</p>
 
-    <!-- Agregamos los enlaces arriba del todo -->
-    <div class="d-flex justify-content-between mb-4">
-        <a href="{% url 'crear_menu' %}" class="btn btn-primary">Crear Nuevo Plato</a>
-        <a href="{% url 'listar_menu' %}" class="btn btn-secondary">Ver Menú</a>
-    </div>
-
-    <h1 class="text-center mb-4">Pedidos Actuales por Mesa</h1>
-
-    <div class="row">
-        {% for mesa in mesas %}
-            <div class="col-md-4 mb-4">
-                <div class="card mesa-card {% if mesa.pedido_actual %}border-success{% else %}border-secondary{% endif %}">
-                    <div class="card-body">
-                        <h5 class="card-title text-center">Mesa {{ mesa.numero_mesa }}</h5>
-
-                        {% if mesa.pedido_actual %}
-                            <h6 class="text-center">Pedido Actual</h6>
-                            <ul class="list-group list-group-flush">
-                                {% for detalle in mesa.pedido_actual.detalles.all %}
-                                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                                        {{ detalle.menu.nombre_plato }} - Cantidad: {{ detalle.cantidad }}
-                                    </li>
-                                {% endfor %}
-                            </ul>
-
-                            <div class="text-center mt-3">
-                                {% if mesa.pedido_actual.estado != 'servido' %}
-                                    <form method="post" class="marcar-servido-form" action="{% url 'marcar_servido' mesa.pedido_actual.id %}">
-                                        {% csrf_token %}
-                                        <button type="submit" class="btn btn-success">Marcar como Servido</button>
-                                    </form>
-                                {% else %}
-                                    <div class="alert alert-success">
-                                        Pedido ya servido
-                                    </div>
-                                {% endif %}
-                            </div>
-                        {% else %}
-                            <div class="alert alert-info text-center">
-                                No hay pedidos para esta mesa.
-                            </div>
-                        {% endif %}
-                    </div>
+    <div class="row" id="pedidosContainer">
+        {% for pedido in pedidos %}
+        <div class="col-md-4 mb-4 pedido-card" data-pedido-id="{{ pedido.id }}" data-tiempo="{{ pedido.tiempo }}">
+            <div class="card h-100">
+                <div class="card-header text-white {% if pedido.tiempo >= 30 %}bg-danger{% elif pedido.tiempo >= 15 %}bg-warning{% else %}bg-light{% endif %}">
+                    <h5>Orden #{{ pedido.numero_comanda }} - Mesa {{ pedido.mesa.numero_mesa }}</h5>
+                    <small>{{ pedido.usuario.username }}</small>
+                    <span class="float-end tiempo-contador">⏰ {{ pedido.tiempo|floatformat:2 }} min</span>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group">
+                        {% for detalle in pedido.detalles_pedido %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            {{ detalle.menu.nombre_plato }}
+                            <span class="badge bg-primary rounded-pill">{{ detalle.cantidad }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                <div class="card-footer d-flex justify-content-between">
+                    <button class="btn btn-success btn-marcar-servido" data-pedido-id="{{ pedido.id }}">Marcar como Listo</button>
                 </div>
             </div>
+        </div>
         {% endfor %}
     </div>
-
-    {% if not mesas %}
-        <div class="alert alert-info text-center">
-            No hay mesas con pedidos en este momento.
-        </div>
-    {% endif %}
 </div>
-{% endblock %}
 
-{% block extra_js %}
+<style>
+    .bg-warning {
+        background-color: orange !important;
+    }
+    .bg-danger {
+        background-color: red !important;
+    }
+    .bg-light {
+        background-color: lightgray !important;
+    }
+</style>
+
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        // Obtenemos todos los formularios de marcar servido
-        const marcarServidoForms = document.querySelectorAll('.marcar-servido-form');
+document.addEventListener('DOMContentLoaded', function() {
+    // Actualizar el contador de tiempo para cada pedido
+    setInterval(function() {
+        document.querySelectorAll('.pedido-card').forEach(function(card) {
+            const tiempoElemento = card.querySelector('.tiempo-contador');
+            let tiempo = parseFloat(card.getAttribute('data-tiempo'));
+            tiempo += 0.0166667; // Incrementar tiempo en minutos (1 segundo = 0.0166667 minutos)
+            card.setAttribute('data-tiempo', tiempo.toFixed(2));
+            tiempoElemento.textContent = '⏰ ' + tiempo.toFixed(2) + ' min';
 
-        marcarServidoForms.forEach(form => {
-            form.addEventListener('submit', function (e) {
-                e.preventDefault(); // Prevenir el envío automático
+            // Cambiar el color según el tiempo
+            const cardHeader = card.querySelector('.card-header');
+            if (tiempo >= 30) {
+                cardHeader.classList.remove('bg-warning', 'bg-light');
+                cardHeader.classList.add('bg-danger');
+            } else if (tiempo >= 15) {
+                cardHeader.classList.remove('bg-light', 'bg-danger');
+                cardHeader.classList.add('bg-warning');
+            } else {
+                cardHeader.classList.remove('bg-warning', 'bg-danger');
+                cardHeader.classList.add('bg-light');
+            }
+        });
+    }, 1000); // Cada segundo
 
-                // Mostrar un diálogo de confirmación personalizado
-                if (confirm('¿El pedido fue marcado como servido? ¿Deseas ver los pedidos activos?')) {
-                    window.location.href = "{% url 'pedidos_activos' %}"; // Redirigir a pedidos activos
-                } else {
-                    // Si el usuario selecciona "No", se envía el formulario para marcar como servido sin redirigir
-                    fetch(form.action, {
-                        method: 'POST',
-                        headers: {
-                            'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value
-                        }
-                    }).then(response => {
-                        if (response.ok) {
-                            // Actualizamos la interfaz para mostrar que el pedido fue servido
-                            const cardBody = form.closest('.card-body');
-                            cardBody.querySelector('.alert-success')?.remove();
-                            const successAlert = document.createElement('div');
-                            successAlert.classList.add('alert', 'alert-success');
-                            successAlert.textContent = 'Pedido ya servido';
-                            cardBody.appendChild(successAlert);
-
-                            // Ocultamos el botón de "Marcar como Servido"
-                            form.remove();
-                        } else {
-                            alert('Error al marcar el pedido como servido.');
-                        }
-                    }).catch(error => {
-                        console.error('Error:', error);
-                    });
+    // Marcar como listo (AJAX)
+    document.querySelectorAll('.btn-marcar-servido').forEach(function(button) {
+        button.addEventListener('click', function() {
+            const pedidoId = this.getAttribute('data-pedido-id');
+            fetch(`/pedido/servido/${pedidoId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken')
                 }
-            });
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Eliminar la tarjeta de pedido de la interfaz
+                    const pedidoCard = document.querySelector(`[data-pedido-id="${pedidoId}"]`);
+                    if (pedidoCard) {
+                        pedidoCard.remove();
+                    }
+                } else {
+                    alert(data.error);
+                }
+            })
+            .catch(error => console.error('Error:', error));
         });
     });
+
+    // Fetch nuevos pedidos cada 5 segundos
+    setInterval(fetchNuevosPedidos, 5000);
+
+    function fetchNuevosPedidos() {
+        fetch('/cocina/nuevos_pedidos/', {
+            method: 'GET'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.nuevos_pedidos) {
+                data.nuevos_pedidos.forEach(pedido => {
+                    if (!document.querySelector(`[data-pedido-id="${pedido.id}"]`)) {
+                        const pedidoHTML = generarPedidoHTML(pedido);
+                        document.getElementById('pedidosContainer').insertAdjacentHTML('beforeend', pedidoHTML);
+                    }
+                });
+            }
+        })
+        .catch(error => console.error('Error al obtener nuevos pedidos:', error));
+    }
+
+    function generarPedidoHTML(pedido) {
+        return `
+        <div class="col-md-4 mb-4 pedido-card" data-pedido-id="${pedido.id}" data-tiempo="${pedido.tiempo}">
+            <div class="card h-100">
+                <div class="card-header text-white ${pedido.tiempo >= 30 ? 'bg-danger' : pedido.tiempo >= 15 ? 'bg-warning' : 'bg-light'}">
+                    <h5>Orden #${pedido.numero_comanda} - Mesa ${pedido.mesa.numero_mesa}</h5>
+                    <small>${pedido.usuario.username}</small>
+                    <span class="float-end tiempo-contador">⏰ ${pedido.tiempo.toFixed(2)} min</span>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group">
+                        ${pedido.detalles.map(detalle => `
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                ${detalle.menu.nombre_plato}
+                                <span class="badge bg-primary rounded-pill">${detalle.cantidad}</span>
+                            </li>
+                        `).join('')}
+                    </ul>
+                </div>
+                <div class="card-footer d-flex justify-content-between">
+                    <button class="btn btn-success btn-marcar-servido" data-pedido-id="${pedido.id}">Marcar como Listo</button>
+                </div>
+            </div>
+        </div>`;
+    }
+
+    // Verificar si los pedidos han sido eliminados cada 4 segundos
+    setInterval(verificarPedidosEliminados, 4000);  
+    
+    function verificarPedidosEliminados() {
+        fetch('/cocina/pedidos_eliminados/', { // Asegúrate de tener esta URL en el backend
+            method: 'GET'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.pedidos_eliminados) {
+                data.pedidos_eliminados.forEach(pedidoId => {
+                    const pedidoCard = document.querySelector(`[data-pedido-id="${pedidoId}"]`);
+                    if (pedidoCard) {
+                        pedidoCard.remove(); // Eliminar la tarjeta del pedido eliminado
+                    }
+                });
+            }
+        })
+        .catch(error => console.error('Error al verificar pedidos eliminados:', error));
+    }
+
+    // Obtener el token CSRF
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; cookies.length > i; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+});
 </script>
 {% endblock %}

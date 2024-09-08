@@ -21,7 +21,7 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     
-                    <!-- Mostrar solo los enlaces específicos para cocineros -->
+                    
                     {% if request.user.tipo_usuario == 'cocinero' %}
                     <li class="nav-item {% if request.resolver_match.url_name == 'cocinero_dashboard' %}active{% endif %}">
                         <a class="nav-link" href="{% url 'cocinero_dashboard' %}">Cocina</a>

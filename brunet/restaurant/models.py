@@ -79,6 +79,7 @@ class Pedido(models.Model):
         ('preparando', 'Preparando'),
         ('servido', 'Servido'),
         ('pagado', 'Pagado'),
+        ('eliminado', 'Eliminado'),
     ]
 
     usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
@@ -94,9 +95,7 @@ class Pedido(models.Model):
         blank=True,
         related_name='pedidos_en_proceso'
     )
-
-    def __str__(self):
-        return f'Pedido {self.id} - Mesa {self.mesa.numero_mesa} - Estado {self.estado}'
+    numero_comanda = models.PositiveIntegerField(unique=True, null=True, blank=True)
 
     def marcar_en_proceso(self, usuario):
         self.en_proceso = True
@@ -104,9 +103,23 @@ class Pedido(models.Model):
         self.save()
 
     def marcar_completado(self):
-        self.en_proceso = False
-        self.usuario_procesando = None
+        self.estado = 'servido'
         self.save()
+
+    def save(self, *args, **kwargs):
+        if not self.numero_comanda:
+            # Obtener el último pedido con numero_comanda asignado
+            last_pedido = Pedido.objects.exclude(numero_comanda__isnull=True).order_by('numero_comanda').last()
+
+            if last_pedido:
+                self.numero_comanda = last_pedido.numero_comanda + 1
+            else:
+                self.numero_comanda = 1  # Si no existe ningún pedido con comanda, empezar con 1
+
+        super(Pedido, self).save(*args, **kwargs)
+
+    def __str__(self):
+        return f'Pedido {self.id} - Mesa {self.mesa.numero_mesa} - Estado {self.estado}'
 
 
 

@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', function() {
             button.addEventListener('click', function(e) {
                 e.preventDefault();
                 const platoId = this.getAttribute('data-id');
-                const platoPrecio = parseFloat(this.getAttribute('data-precio')); // Parsear el precio correctamente
+                const platoPrecio = parseFloat(this.getAttribute('data-precio'));
                 const platoNombre = this.closest('.card').querySelector('.card-title').innerText;
 
                 // Verificar si el plato ya existe en el pedido
@@ -32,6 +32,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
 
                 renderPedido();
+
+                // Mostrar notificación debajo del botón
+                const notificacion = this.closest('.card-body').querySelector('.notificacion-agregado');
+                mostrarNotificacion(notificacion);
             });
         });
     }
@@ -39,33 +43,15 @@ document.addEventListener('DOMContentLoaded', function() {
     // Añadir controladores de eventos a los platos al cargar la página
     addEventListenersToPlatos();
 
-    // Manejo del envío del formulario
-    document.getElementById('pedidoForm').addEventListener('submit', function(e) {
-        e.preventDefault();  // Evitar el envío normal del formulario
+    // Función para mostrar la notificación
+    function mostrarNotificacion(element) {
+        element.style.display = 'inline';  // Mostrar la notificación
 
-        if (pedido.length === 0) {
-            alert("Por favor, agrega al menos un plato al pedido.");
-            return;
-        }
-
-        // Enviar los datos del pedido al servidor
-        fetch(window.location.href, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': getCookie('csrftoken')
-            },
-            body: JSON.stringify({ platos: pedido })
-        }).then(response => response.json())
-          .then(data => {
-              if (data.success) {
-                  alert('Pedido creado con éxito');
-                  window.location.href = '/';  // Redirigir después de crear el pedido
-              } else {
-                  alert('Hubo un error al crear el pedido');
-              }
-          }).catch(error => console.error('Error:', error));
-    });
+        // Desaparecer la notificación después de 3 segundos
+        setTimeout(() => {
+            element.style.display = 'none';
+        }, 3000);
+    }
 
     // Función para mostrar el resumen del pedido y ajustar cantidades
     function renderPedido() {
@@ -92,14 +78,40 @@ document.addEventListener('DOMContentLoaded', function() {
                     plato.cantidad -= 1;
                     renderPedido();
                 } else {
-                    // Si la cantidad es 1 y el usuario hace clic en restar, eliminamos el plato del pedido
                     pedido = pedido.filter(p => p.plato_id !== plato.plato_id);
                     renderPedido();
-                    alert(`Se sacó el plato ${plato.nombre} del pedido.`);
                 }
             });
         });
     }
+
+    // Manejo del envío del formulario
+    document.getElementById('pedidoForm').addEventListener('submit', function(e) {
+        e.preventDefault();  // Evitar el envío normal del formulario
+
+        if (pedido.length === 0) {
+            alert("Por favor, agrega al menos un plato al pedido.");
+            return;
+        }
+
+        // Enviar los datos del pedido al servidor
+        fetch(window.location.href, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')  // Incluye el CSRF token
+            },
+            body: JSON.stringify({ platos: pedido })  // Enviar datos
+        }).then(response => response.json())
+          .then(data => {
+              if (data.success) {
+                  alert('Pedido creado con éxito. Número de comanda: ' + data.numero_comanda);
+                  window.location.href = '/';  // Redirigir después de crear el pedido
+              } else {
+                  alert('Hubo un error al crear el pedido');
+              }
+          }).catch(error => console.error('Error:', error));
+    });
 
     // Obtener el CSRF token
     function getCookie(name) {

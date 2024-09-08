@@ -29,7 +29,7 @@ from .views import (
     eliminar_compra,
     obtener_precio_plato,
     marcar_servido,
-    crear_categoria, eliminar_categoria, listar_categorias, cocinero_dashboard
+    crear_categoria, eliminar_categoria, listar_categorias, cocinero_dashboard, nuevos_pedidos
 )
 
 urlpatterns =[
@@ -48,6 +48,9 @@ urlpatterns =[
     path('pedido/eliminar/<int:pedido_id>/', views.eliminar_pedido, name='eliminar_pedido'),
     path('obtener_precio_plato/', obtener_precio_plato, name='obtener_precio_plato'),
     path('pedido/servido/<int:pedido_id>/', marcar_servido, name='marcar_servido'),
+    path('cocina/nuevos_pedidos/', views.nuevos_pedidos, name='nuevos_pedidos'),
+    path('cocina/pedidos_eliminados/', views.pedidos_eliminados, name='pedidos_eliminados'),
+
 
 
     # Pago 

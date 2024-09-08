@@ -63,25 +63,34 @@ def crear_pedido(request, mesa_id):
     if request.method == 'POST':
         # Procesar el pedido enviado por el usuario
         pedido_data = json.loads(request.body.decode('utf-8'))
+        
+        # Crear el pedido
         pedido = Pedido.objects.create(mesa=mesa, usuario=request.user, estado='preparando', total=0)
         
         # Agregar detalles del pedido
         for detalle in pedido_data['platos']:
             plato = get_object_or_404(Menu, id=detalle['plato_id'])
             cantidad = detalle['cantidad']
-            DetallePedido.objects.create(pedido=pedido, menu=plato, cantidad=cantidad, precio_unitario=plato.precio, subtotal=plato.precio * cantidad)
+            DetallePedido.objects.create(
+                pedido=pedido, 
+                menu=plato, 
+                cantidad=cantidad, 
+                precio_unitario=plato.precio, 
+                subtotal=plato.precio * cantidad
+            )
         
-        # Calcular el total
+        # Calcular el total del pedido
         pedido.total = sum(d.subtotal for d in pedido.detalles.all())
         pedido.save()
-        return JsonResponse({'success': True})
+
+        # Devolver el número de comanda
+        return JsonResponse({'success': True, 'numero_comanda': pedido.numero_comanda})
 
     return render(request, 'pedido/crear_pedido.html', {
         'mesa': mesa,
         'categorias': categorias,
         'platos': platos,
     })
-
 
 
 
@@ -135,19 +144,65 @@ def modificar_pedido(request, pedido_id):
 @login_required
 def eliminar_pedido(request, pedido_id):
     pedido = get_object_or_404(Pedido, id=pedido_id)
-    
+
     if request.method == 'POST':
-        pedido.delete()
-        messages.success(request, 'Pedido eliminado con éxito.')
+        pedido.estado = 'eliminado'  # Cambia el estado a 'eliminado' en lugar de borrarlo
+        pedido.save()
+        messages.success(request, 'Pedido marcado como eliminado con éxito.')
         return redirect('pedidos_activos')
-    
+
     return render(request, 'pedido/eliminar_pedido.html', {'pedido': pedido})
+
 
 @login_required
 def pedidos_activos(request):
     Pedido.objects.filter(en_proceso=True, usuario_procesando=request.user).update(en_proceso=False, usuario_procesando=None)
     pedidos = Pedido.objects.filter(estado__in=['pendiente', 'preparando', 'servido'])
     return render(request, 'pedido/pedidos_activos.html', {'pedidos': pedidos})
+
+
+from .models import Pedido, DetallePedido
+from django.core.serializers import serialize
+
+def nuevos_pedidos(request):
+    # Obtener pedidos en estado 'preparando'
+    pedidos = Pedido.objects.filter(estado='preparando').order_by('fecha_pedido')
+
+    # Formatear los pedidos para enviarlos como JSON
+    pedidos_data = []
+    for pedido in pedidos:
+        detalles = DetallePedido.objects.filter(pedido=pedido)
+        pedidos_data.append({
+            'id': pedido.id,
+            'numero_comanda': pedido.numero_comanda,
+            'mesa': {
+                'numero_mesa': pedido.mesa.numero_mesa,
+            },
+            'usuario': {
+                'username': pedido.usuario.username,
+            },
+            'tiempo': (timezone.now() - pedido.fecha_pedido).total_seconds() / 60,  # Tiempo en minutos
+            'detalles': [
+                {
+                    'menu': {
+                        'nombre_plato': detalle.menu.nombre_plato
+                    },
+                    'cantidad': detalle.cantidad
+                } for detalle in detalles
+            ]
+        })
+
+    return JsonResponse({'nuevos_pedidos': pedidos_data})
+
+def pedidos_eliminados(request):
+    pedidos_eliminados_ids = Pedido.objects.filter(estado='eliminado').values_list('id', flat=True)
+    return JsonResponse({'pedidos_eliminados': list(pedidos_eliminados_ids)})
+
+
+
+
+
+
 
 
 from django.http import JsonResponse
@@ -616,9 +671,7 @@ def marcar_servido(request, pedido_id):
     pedido.marcar_completado()  # Liberar el proceso si estaba marcado en proceso
     pedido.save()
 
-    messages.success(request, f"El pedido {pedido.id} ha sido marcado como servido.")
-    return redirect('pedidos_activos')
-
+    return JsonResponse({'success': True, 'message': f"El pedido {pedido.id} ha sido marcado como servido."})
 #fin
 
 
@@ -1134,17 +1187,21 @@ def exportar_inventario(request):
 #para la cocina 
 from django.shortcuts import render
 from .models import Mesa, Pedido
+from datetime import datetime
+from django.utils import timezone
 
 def cocinero_dashboard(request):
-    # Obtener todas las mesas
-    mesas = Mesa.objects.all()
+    # Obtener todos los pedidos en estado "preparando"
+    pedidos = Pedido.objects.filter(estado='preparando').order_by('fecha_pedido')
 
-    # Iterar sobre cada mesa y buscar su último pedido no pagado
-    for mesa in mesas:
-        mesa.pedido_actual = Pedido.objects.filter(mesa=mesa).exclude(estado='pagado').order_by('-fecha_pedido').first()
+    # Para cada pedido, obtener los detalles del pedido
+    for pedido in pedidos:
+        pedido.detalles_pedido = DetallePedido.objects.filter(pedido=pedido)
+        # Calcular el tiempo transcurrido en minutos
+        pedido.tiempo = (timezone.now() - pedido.fecha_pedido).total_seconds() / 60
 
     context = {
-        'mesas': mesas
+        'pedidos': pedidos,
     }
     return render(request, 'cocina/cocineros.html', context)
 
