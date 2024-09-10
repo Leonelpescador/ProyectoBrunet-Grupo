@@ -50,9 +50,11 @@
                                     {% if pedido.estado == 'pendiente' %}
                                         {% if request.user.is_superuser or request.user.tipo_usuario == 'admin' or request.user.tipo_usuario == 'cajero' %}
                                             <a href="{% url 'registrar_pago' pedido.id %}" class="btn btn-success mb-1">Registrar Pago</a>
+                                            
                                         {% endif %}
                                     {% elif pedido.estado == 'preparando' %}
                                         <button class="btn btn-warning mb-1 btn-marcar-servido" data-pedido-id="{{ pedido.id }}">Marcar como Servido</button>
+                                        
                                     {% elif pedido.estado == 'servido' %}
                                         {% if request.user.is_superuser or request.user.tipo_usuario == 'admin' or request.user.tipo_usuario == 'cajero' %}
                                             <a href="{% url 'registrar_pago' pedido.id %}" class="btn btn-success mb-1">Registrar Pago</a>
@@ -62,6 +64,7 @@
                                     <span class="badge bg-info text-dark">En proceso por {{ pedido.usuario_procesando.username }}</span>
                                 {% endif %}
                             </td>
+                            
                         </tr>
                     {% endfor %}
                 </tbody>
@@ -79,51 +82,77 @@
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Manejar el clic en el botón "Marcar como Servido"
-    document.querySelectorAll('.btn-marcar-servido').forEach(function(button) {
-        button.addEventListener('click', function() {
-            const pedidoId = this.getAttribute('data-pedido-id');
-
-            // Hacer la solicitud AJAX
-            fetch(`/pedido/servido/${pedidoId}/`, {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': getCookie('csrftoken')
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Eliminar la fila del pedido de la tabla
-                    const pedidoRow = document.getElementById(`pedido-${pedidoId}`);
-                    if (pedidoRow) {
-                        pedidoRow.remove();
+    document.addEventListener('DOMContentLoaded', function() {
+        // Manejar el clic en el botón "Marcar como Servido"
+        document.querySelectorAll('.btn-marcar-servido').forEach(function(button) {
+            button.addEventListener('click', function() {
+                const pedidoId = this.getAttribute('data-pedido-id');
+                
+                // Hacer la solicitud AJAX para marcar como servido
+                fetch(`/pedido/servido/${pedidoId}/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken')
                     }
-                } else {
-                    alert(data.error);
-                }
-            })
-            .catch(error => console.error('Error:', error));
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log(data); // Verificar la respuesta del backend
+                    if (data.success) {
+                        const pedidoRow = document.getElementById(`pedido-${pedidoId}`);
+                        if (pedidoRow) {
+                            const estadoCell = pedidoRow.querySelector('td:nth-child(3) .badge');
+                            // Cambiar el estado visualmente a "Servido"
+                            estadoCell.classList.remove('bg-warning', 'bg-primary');
+                            estadoCell.classList.add('bg-success');
+                            estadoCell.textContent = 'Servido';
+                            
+                            // Cambiar las acciones: eliminar y registrar pago
+                            const accionesCell = pedidoRow.querySelector('td:nth-child(5)');
+                            accionesCell.innerHTML = `
+                                <a href="/pedido/eliminar/${pedidoId}/" class="btn btn-danger mb-1">Eliminar</a>
+                                <a href="/caja/registrar_pago/${pedidoId}/" class="btn btn-success mb-1">Registrar Pago</a>
+                            `;
+                        }
+                    } else {
+                        alert(data.error || 'Ocurrió un error al marcar como servido.');
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+            });
         });
-    });
-
-    // Obtener el token CSRF
-    function getCookie(name) {
-        let cookieValue = null;
-        if (document.cookie && document.cookie !== '') {
-            const cookies = document.cookie.split(';');
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i].trim();
-                if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
+    
+        // Eliminar pedidos pagados al cargar la página
+        document.querySelectorAll('tr[id^="pedido-"]').forEach(function(row) {
+            const estadoCell = row.querySelector('td:nth-child(3) .badge');
+            const estadoTexto = estadoCell ? estadoCell.textContent.trim().toLowerCase() : '';
+            
+            console.log("Estado encontrado:", estadoTexto); // Verificar qué valor de estado se obtiene
+            
+            // Eliminar filas cuyo estado sea "Pagado"
+            if (estadoTexto === 'pagado') {
+                row.remove();
+            }
+        });
+    
+        // Obtener el token CSRF para solicitudes POST
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
                 }
             }
+            return cookieValue;
         }
-        return cookieValue;
-    }
-});
+    });
+    
+    
 </script>
 
 {% endblock %}

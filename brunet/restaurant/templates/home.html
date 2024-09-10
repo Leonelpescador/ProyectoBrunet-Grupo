@@ -18,7 +18,6 @@
                 </div>
                 <div class="text-center">
                     <a href="{% url 'apertura_caja' %}" class="btn btn-success">Abrir Caja</a>
-                    <a href="{% url 'pedidos_activos' %}" class="btn btn-success">Pedidos Activos</a>
                 </div>
             {% else %}
                 <div class="alert alert-success text-center">
@@ -29,12 +28,15 @@
                         <a href="{% url 'consulta_caja' caja_abierta.id %}" class="btn btn-primary">Consultar Caja</a>
                     {% else %}
                         <button type="button" class="btn btn-primary" onclick="alert('No hay movimientos registrados en esta caja.');">Consultar Caja</button>
-                        <a href="{% url 'pedidos_activos' %}" class="btn btn-success">Pedidos Activos</a>
                     {% endif %}
                     <a href="{% url 'cierre_caja' caja_abierta.id %}" class="btn btn-danger" onclick="return confirm('¿Estás seguro de que deseas cerrar la caja?');">Cerrar Caja</a>
                 </div>
             {% endif %}
-        
+        {% endif %}
+    </div>
+    <div class="text-center mb-4">
+        {% if request.user.is_superuser or request.user.tipo_usuario == 'admin' or request.user.tipo_usuario == 'cajero' %}
+            <a href="{% url 'pedidos_activos' %}" class="btn btn-success">Pedidos Activos</a>
         {% endif %}
     </div>
 
@@ -51,7 +53,6 @@
                     </div>
                     <div class="menu-desplegable" style="display:none;">
                         <a href="{% url 'crear_pedido' mesa_id=mesa.id %}" class="btn btn-custom">Crear Pedido</a>
-                        <a href="{% url 'pedidos_activos' %}" class="btn btn-custom">Ver Pedidos</a>
                         {% if request.user.is_superuser or request.user.tipo_usuario == 'admin' or request.user.tipo_usuario == 'cajero' %}
                             <a href="{% url 'crear_reserva' %}" class="btn btn-custom">Crear Reserva</a>
                             <a href="{% url 'editar_mesa' mesa.id %}" class="btn btn-custom">Editar Mesa</a>
@@ -66,6 +67,7 @@
     </div>
 </div>
 {% endblock %}
+
 
 {% block extra_js %}
 <script>

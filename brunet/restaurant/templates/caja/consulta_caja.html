@@ -9,33 +9,89 @@
         <p>Cierre: {{ caja.cierre|date:"d/m/Y H:i" }}</p>
     {% endif %}
 
-    <h4>Transacciones:</h4>
-    {% if transacciones and transacciones.exists %}
-        <ul>
-            {% for transaccion in transacciones %}
-                <li>{{ transaccion.tipo }} - ${{ transaccion.monto }} - {{ transaccion.descripcion }} ({{ transaccion.fecha|date:"d/m/Y H:i" }})</li>
-            {% endfor %}
-        </ul>
-    {% else %}
-        <p>No hay transacciones registradas.</p>
-    {% endif %}
+    <!-- Transacciones -->
+    <div class="card mb-4">
+        <div class="card-header bg-secondary text-white">
+            <h4>Transacciones</h4>
+        </div>
+        <div class="card-body">
+            {% if transacciones and transacciones.exists %}
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Descripción</th>
+                            <th>Monto</th>
+                            <th>Tipo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for transaccion in transacciones %}
+                        <tr>
+                            <td>{{ transaccion.fecha|date:"d/m/Y H:i" }}</td>
+                            <td>{{ transaccion.descripcion }}</td>
+                            <td>${{ transaccion.monto }}</td>
+                            <td>{{ transaccion.tipo|title }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p class="text-muted">No hay transacciones registradas.</p>
+            {% endif %}
+        </div>
+    </div>
 
-    <h4>Total Ingresado: ${{ monto_total }}</h4>
+    <!-- Detalles de Pagos -->
+    <div class="card mb-4">
+        <div class="card-header bg-success text-white">
+            <h4>Detalles de Pagos</h4>
+        </div>
+        <div class="card-body">
+            {% if pagos and pagos.exists %}
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Pedido N°</th>
+                            <th>Monto</th>
+                            <th>Método de Pago</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for pago in pagos %}
+                        <tr>
+                            <td>{{ pago.pedido.id }}</td>
+                            <td>${{ pago.monto }}</td>
+                            <td>{{ pago.metodo_pago|title }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p class="text-muted">No se han registrado pagos.</p>
+            {% endif %}
+        </div>
+    </div>
 
-    <h4>Pagos:</h4>
-    {% if pagos and pagos.exists %}
-        <ul>
-            {% for pago in pagos %}
-                <li>Pago de Pedido N° {{ pago.pedido.id }} - Monto: ${{ pago.monto }} - Método: {{ pago.metodo_pago }}</li>
-            {% endfor %}
-        </ul>
-    {% else %}
-        <p>No se han registrado pagos.</p>
-    {% endif %}
+    <!-- Resumen de Pagos por Método de Pago -->
+    <div class="card mb-4">
+        <div class="card-header bg-warning">
+            <h4>Resumen de Pagos por Método de Pago</h4>
+        </div>
+        <div class="card-body">
+            <ul class="list-group">
+                <li class="list-group-item"><strong>Total Efectivo:</strong> ${{ total_efectivo }}</li>
+                <li class="list-group-item"><strong>Total Tarjeta:</strong> ${{ total_tarjeta }}</li>
+                <li class="list-group-item"><strong>Total Transferencia:</strong> ${{ total_transferencia }}</li>
+                <li class="list-group-item bg-light"><strong>Total Ingresado:</strong> ${{ total_ingresos }}</li>
+            </ul>
+        </div>
+    </div>
 
-    {% if caja.usuario == request.user %}
-        <a href="{% url 'home' %}" class="btn btn-primary mt-3">Volver a Inicio</a>
-        <a href="{% url 'pedidos_activos' %}" class="btn btn-secondary mt-3">Ir a Pedidos Activos</a>
-    {% endif %}
+    <!-- Botones de acción -->
+    <div class="text-center mt-4">
+        <a href="{% url 'home' %}" class="btn btn-primary">Volver a Inicio</a>
+        <a href="{% url 'pedidos_activos' %}" class="btn btn-secondary">Ir a Pedidos Activos</a>
+    </div>
 </div>
 {% endblock %}

@@ -1,9 +1,8 @@
 {% extends 'base.html' %}
-
+{% load static %}
 {% block content %}
 <div class="container">
     <h1 class="text-center">Modificar Pedido para la Mesa {{ mesa.numero_mesa }}</h1>
-    {% load static %}
 
     <form id="pedidoForm" class="mb-5" method="post">
         {% csrf_token %}
@@ -22,10 +21,12 @@
         <h3 class="mt-5">Resumen del Pedido</h3>
         <ul id="resumenPedido" class="list-group mb-4">
             {% for detalle in pedido.detalles.all %}
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-                {{ detalle.menu.nombre_plato }} - Cantidad: <span class="cantidad-text">{{ detalle.cantidad }}</span> - ${{ detalle.precio_unitario }}
-                <div class="cantidad-control">
-                    <button class="btn btn-danger eliminar-pedido" data-id="{{ detalle.id }}">Eliminar</button>
+            <li class="list-group-item d-flex justify-content-between align-items-center flex-wrap" id="detalle-{{ detalle.id }}">
+                <div class="col-12 col-md-6">
+                    {{ detalle.menu.nombre_plato }} - Cantidad: <span class="cantidad-text">{{ detalle.cantidad }}</span> - ${{ detalle.precio_unitario }}
+                </div>
+                <div class="col-12 col-md-6 text-end mt-2 mt-md-0">
+                    <button type="button" class="btn btn-danger eliminar-pedido" data-id="{{ detalle.id }}">Eliminar</button>
                 </div>
             </li>
             {% endfor %}
@@ -48,15 +49,15 @@
                 {% for plato in platos %}
                 <div class="col">
                     <div class="card h-100">
-                        {% if plato.imagen and plato.imagen.url %}
+                        {% if plato.imagen %}
                         <img src="{{ plato.imagen.url }}" class="card-img-top img-fluid" alt="{{ plato.nombre_plato }}">
                         {% else %}
-                        <img src="{% static 'img/default_plato.jpg' %}" class="card-img-top img-fluid" alt="Imagen no disponible">
+                        <img src="{% static 'images/default_image.png' %}" class="card-img-top img-fluid" alt="Imagen no disponible">
                         {% endif %}
                         <div class="card-body">
                             <h5 class="card-title">{{ plato.nombre_plato }}</h5>
                             <p class="card-text">${{ plato.precio }}</p>
-                            <button class="btn btn-primary agregar-pedido" data-id="{{ plato.id }}" data-precio="{{ plato.precio }}">Agregar al Pedido</button>
+                            <button type="button" class="btn btn-primary agregar-pedido" data-id="{{ plato.id }}" data-precio="{{ plato.precio }}">Agregar al Pedido</button>
                         </div>
                     </div>
                 </div>
@@ -64,7 +65,7 @@
             </div>
         </div>
 
-        <button type="submit" class="btn btn-success mt-4">Guardar Cambios</button>
+        <button type="submit" class="btn btn-secondary">Guardar Cambios</button>
         <a href="{% url 'pedidos_activos' %}" class="btn btn-secondary">Cancelar</a>
     </form>
 </div>
@@ -73,22 +74,118 @@
     document.addEventListener('DOMContentLoaded', function() {
         const mostrarPlatosBtn = document.getElementById('mostrarPlatosBtn');
         const platosContainerSection = document.getElementById('platosContainerSection');
+        const resumenPedido = document.getElementById('resumenPedido');
+        let pedido = [];
 
         // Mostrar la sección de seleccionar platos cuando se hace clic en "Agregar Plato"
         mostrarPlatosBtn.addEventListener('click', function() {
             platosContainerSection.style.display = 'block';
         });
 
-        // Eliminar un detalle de pedido
-        document.querySelectorAll('.eliminar-pedido').forEach(button => {
-            button.addEventListener('click', function(e) {
-                e.preventDefault();
-                const detalleId = this.getAttribute('data-id');
-                // Aquí deberías hacer una llamada AJAX para eliminar el detalle de pedido
-                // Después de eliminar, refresca el resumen del pedido.
-                alert('El detalle con ID ' + detalleId + ' ha sido eliminado.');
+        // Agregar plato al pedido (sin recargar la página)
+        function addEventListenersToPlatos() {
+            document.querySelectorAll('.agregar-pedido').forEach(button => {
+                button.addEventListener('click', function() {
+                    const platoId = this.getAttribute('data-id');
+                    const precio = this.getAttribute('data-precio');
+                    const nombrePlato = this.closest('.card').querySelector('.card-title').innerText;
+
+                    // Verificar si el plato ya está en el pedido
+                    const itemExistente = pedido.find(p => p.plato_id == platoId);
+                    if (itemExistente) {
+                        itemExistente.cantidad += 1;
+                    } else {
+                        pedido.push({ plato_id: platoId, nombre: nombrePlato, cantidad: 1, precio_unitario: precio });
+                    }
+
+                    renderPedido();
+                });
             });
+        }
+
+        // Llamar al evento de agregar platos cuando la página cargue
+        addEventListenersToPlatos();
+
+        // Función para renderizar el pedido en el resumen
+        function renderPedido() {
+            resumenPedido.innerHTML = ''; // Limpiar el resumen actual
+            pedido.forEach(plato => {
+                const li = document.createElement('li');
+                li.classList.add('list-group-item', 'd-flex', 'justify-content-between', 'align-items-center');
+                li.innerHTML = `
+                    <div class="col-12 col-md-6">
+                        ${plato.nombre} - Cantidad: ${plato.cantidad} - Precio: $${(plato.precio_unitario * plato.cantidad).toFixed(2)}
+                    </div>
+                    <div class="col-12 col-md-6 text-end mt-2 mt-md-0">
+                        <button type="button" class="btn btn-danger eliminar-pedido" data-id="${plato.plato_id}">Eliminar</button>
+                    </div>
+                `;
+                resumenPedido.appendChild(li);
+            });
+
+            // Asignar el evento de eliminar nuevamente
+            resumenPedido.querySelectorAll('.eliminar-pedido').forEach(button => {
+                button.addEventListener('click', function() {
+                    const platoId = this.getAttribute('data-id');
+                    // Eliminar el plato del array pedido
+                    pedido = pedido.filter(p => p.plato_id !== platoId);
+                    renderPedido(); // Volver a renderizar
+                });
+            });
+        }
+
+        // Manejo de la validación y el envío del formulario
+        const pedidoForm = document.getElementById('pedidoForm');
+        pedidoForm.addEventListener('submit', function(event) {
+            event.preventDefault();  // Detenemos el envío para validar
+            
+            // Recopilación de datos del pedido
+            const formData = new FormData(pedidoForm);
+            formData.append('detalles', JSON.stringify(obtenerDetalles()));
+
+            // Aquí deberías realizar la llamada AJAX para enviar los cambios al servidor
+            fetch(window.location.href, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),  // Incluir el CSRF token
+                },
+                body: formData
+            }).then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Pedido modificado con éxito.');
+                    window.location.href = '/pedidos_activos';  // Redirigir después de modificar el pedido
+                } else {
+                    alert('Hubo un error al modificar el pedido');
+                }
+            }).catch(error => console.error('Error:', error));
         });
+
+        // Obtener los detalles del pedido actualizado
+        function obtenerDetalles() {
+            return pedido.map(plato => ({
+                'menu_id': plato.plato_id,
+                'cantidad': plato.cantidad
+            }));
+        }
+
+        // Función para obtener el token CSRF
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
     });
 </script>
+
+
 {% endblock %}

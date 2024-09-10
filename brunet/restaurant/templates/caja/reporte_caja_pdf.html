@@ -46,7 +46,7 @@
             background-color: #f4f4f4;
             font-weight: bold;
         }
-        #total-final {
+        #totales {
             font-weight: bold;
             text-align: right;
         }
@@ -67,7 +67,6 @@
             <p>Apertura: {{ caja.apertura|date:"d/m/Y H:i" }}</p>
             <p>Cierre: {{ caja.cierre|date:"d/m/Y H:i" }}</p>
             <p>Total Inicial: ${{ caja.total_inicial }}</p>
-            <p>Total Final: $<span id="total-final"></span></p>
         </div>
 
         <h2>Transacciones</h2>
@@ -77,7 +76,7 @@
                     <th>Fecha</th>
                     <th>Descripción</th>
                     <th>Monto</th>
-                    <th>Tipo</th>
+                    <th>Método de Pago</th>
                 </tr>
             </thead>
             <tbody>
@@ -86,23 +85,51 @@
                         <td>{{ transaccion.fecha|date:"d/m/Y H:i" }}</td>
                         <td>{{ transaccion.descripcion }}</td>
                         <td class="monto">${{ transaccion.monto }}</td>
-                        <td>{{ transaccion.tipo|title }}</td>
+                        <td>{{ transaccion.pago.metodo_pago|title }}</td>
                     </tr>
                 {% endfor %}
             </tbody>
         </table>
+
+        <h3>Totales por Método de Pago</h3>
+        <p>Total Efectivo: ${{ total_efectivo }}</p>
+        <p>Total Tarjeta: ${{ total_tarjeta }}</p>
+        <p>Total Transfer ${{ total_transferencia }}</p>
+        
+
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             let totalFinal = 0;
+            let totalEfectivo = 0;
+            let totalTarjeta = 0;
+            let totalTransferencia = 0;
+
             document.querySelectorAll('.monto').forEach(function(element) {
+                const row = element.closest('tr');
+                const metodoPago = row.querySelector('td:nth-child(4)').innerText.trim().toLowerCase();
                 const monto = parseFloat(element.textContent.replace(/[^\d.-]/g, '')); // Eliminar todos los caracteres no numéricos
+
                 if (!isNaN(monto)) {
                     totalFinal += monto;
+                    
+                    // Acumular montos según el método de pago
+                    if (metodoPago === 'efectivo') {
+                        totalEfectivo += monto;
+                    } else if (metodoPago === 'tarjeta') {
+                        totalTarjeta += monto;
+                    } else if (metodoPago === 'transferencia') {
+                        totalTransferencia += monto;
+                    }
                 }
             });
+
+            // Mostrar totales en el reporte
             document.getElementById('total-final').textContent = totalFinal.toFixed(2);
+            document.getElementById('total-efectivo').textContent = totalEfectivo.toFixed(2);
+            document.getElementById('total-tarjeta').textContent = totalTarjeta.toFixed(2);
+            document.getElementById('total-transferencia').textContent = totalTransferencia.toFixed(2);
         });
     </script>
 </body>

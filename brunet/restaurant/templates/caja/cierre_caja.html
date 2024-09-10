@@ -31,7 +31,7 @@
                 <th>Fecha</th>
                 <th>Descripción</th>
                 <th>Monto</th>
-                <th>Tipo</th>
+                <th>Método de Pago</th>
             </tr>
         </thead>
         <tbody>
@@ -40,7 +40,13 @@
                     <td>{{ transaccion.fecha|date:"d/m/Y H:i" }}</td>
                     <td>{{ transaccion.descripcion }}</td>
                     <td>${{ transaccion.monto }}</td>
-                    <td>{{ transaccion.tipo|title }}</td>
+                    <td>
+                        {% if transaccion.pago %}
+                            {{ transaccion.pago.metodo_pago|title }}
+                        {% else %}
+                            Sin Método de Pago
+                        {% endif %}
+                    </td>
                 </tr>
             {% endfor %}
         </tbody>

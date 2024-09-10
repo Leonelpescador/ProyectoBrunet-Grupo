@@ -96,22 +96,22 @@ def crear_pedido(request, mesa_id):
 
 @login_required
 def modificar_pedido(request, pedido_id):
-    
     pedido = get_object_or_404(Pedido, id=pedido_id)
     mesa = pedido.mesa  
-
-
     categorias = Categoria.objects.all()
     platos = Menu.objects.all()
 
     if request.method == 'POST':
-        if request.is_ajax():  #
-            data = request.POST
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':  # Verificar si es una solicitud AJAX
+            data = json.loads(request.body)
             nuevos_detalles = data.get('detalles', [])
+
+            # Actualizar o crear nuevos detalles
             for detalle in nuevos_detalles:
                 menu_id = detalle.get('menu_id')
                 cantidad = detalle.get('cantidad')
                 plato = Menu.objects.get(id=menu_id)
+
                 detalle_pedido, created = DetallePedido.objects.get_or_create(
                     pedido=pedido,
                     menu=plato,
@@ -120,8 +120,10 @@ def modificar_pedido(request, pedido_id):
                 if not created:
                     detalle_pedido.cantidad = cantidad
                     detalle_pedido.save()
+            ids_nuevos_detalles = [detalle['menu_id'] for detalle in nuevos_detalles]
+            pedido.detalles.exclude(menu_id__in=ids_nuevos_detalles).delete()
 
-            return JsonResponse({'success': True})
+            return JsonResponse({'success': True, 'message': 'Pedido actualizado exitosamente.'})
 
         form = ModificarPedidoForm(request.POST, instance=pedido)
         if form.is_valid():
@@ -224,18 +226,39 @@ def obtener_precio_plato(request):
 # Creación de Pago
 @login_required
 def crear_pago(request, pedido_id):
+    # Obtener el pedido
     pedido = get_object_or_404(Pedido, id=pedido_id)
+
     if request.method == 'POST':
         form = PagoForm(request.POST)
         if form.is_valid():
+            # Crear el pago y asociarlo con el pedido
             pago = form.save(commit=False)
             pago.pedido = pedido
             pago.save()
-            messages.success(request, 'Pago realizado con éxito.')
-            return redirect('home')
+
+            # Imprimir el estado actual del pedido antes de cambiarlo
+            print(f"Estado actual del pedido {pedido.id}: {pedido.estado}")
+
+            # Actualizar el estado del pedido a 'pagado'
+            pedido.estado = 'pagado'
+            pedido.save()
+
+            # Imprimir el estado actualizado del pedido
+            print(f"Nuevo estado del pedido {pedido.id}: {pedido.estado}")
+
+            # Mostrar mensaje de éxito
+            messages.success(request, f'Pago para el pedido {pedido.id} registrado con éxito.')
+
+            # Redirigir a la página de pedidos activos
+            return redirect('pedidos_activos')
+
     else:
         form = PagoForm()
+
     return render(request, 'pago/crear_pago.html', {'form': form, 'pedido': pedido})
+
+
 
 # Modificación de Pago
 @login_required
@@ -566,24 +589,29 @@ def apertura_caja(request):
 def consulta_caja(request, caja_id):
     caja = get_object_or_404(Caja, id=caja_id)
     
-
+    # Obtener las transacciones de la caja
     transacciones = caja.transacciones.all()
 
-    pedidos_en_caja = Pedido.objects.filter(
-        fecha_pedido__gte=caja.apertura, 
-        fecha_pedido__lte=caja.cierre if caja.cierre else timezone.now()
-    )
+    # Calcular el monto total de ingresos
+    total_ingresos = transacciones.filter(tipo='ingreso').aggregate(Sum('monto'))['monto__sum'] or 0
     
+    # Calcular los totales por método de pago
+    total_efectivo = sum(t.monto for t in transacciones if t.pago and t.pago.metodo_pago == 'efectivo')
+    total_tarjeta = sum(t.monto for t in transacciones if t.pago and t.pago.metodo_pago == 'tarjeta')
+    total_transferencia = sum(t.monto for t in transacciones if t.pago and t.pago.metodo_pago == 'transferencia')
+
+    # Obtener los pagos asociados a los pedidos de la caja
+    pedidos_en_caja = Pedido.objects.filter(fecha_pedido__gte=caja.apertura, fecha_pedido__lte=caja.cierre if caja.cierre else timezone.now())
     pagos = Pago.objects.filter(pedido__in=pedidos_en_caja)
-    
-    # Calcular el monto total de ingresos en la caja
-    monto_total = transacciones.filter(tipo='ingreso').aggregate(Sum('monto'))['monto__sum'] or 0
 
     return render(request, 'caja/consulta_caja.html', {
         'caja': caja,
         'transacciones': transacciones,
-        'monto_total': monto_total,
-        'pagos': pagos
+        'total_ingresos': total_ingresos,
+        'pagos': pagos,
+        'total_efectivo': total_efectivo,
+        'total_tarjeta': total_tarjeta,
+        'total_transferencia': total_transferencia,
     })
 
 
@@ -592,22 +620,30 @@ def consulta_caja(request, caja_id):
 # Cierre de Caja
 @login_required
 def cierre_caja(request, caja_id):
-    caja = get_object_or_404(Caja, id=caja_id, usuario=request.user)  # Asegura que solo pueda cerrar su propia caja
+    caja = get_object_or_404(Caja, id=caja_id, usuario=request.user)  # Solo cerrar su propia caja
+
+    if caja.estado != 'abierta':  # Verificar que la caja esté abierta
+        messages.error(request, 'La caja ya ha sido cerrada.')
+        return redirect('cierre_caja', caja_id=caja.id)
 
     if request.method == 'POST':
         total_final = caja.calcular_total_final()
         caja.cerrar_caja(total_final)
         messages.success(request, f'Caja {caja.id} cerrada exitosamente con un total de {caja.total_final}.')
+        
+        # Después de cerrar, quedarse en la página de cierre para descargar el reporte
         total_ingresos = sum(transaccion.monto for transaccion in caja.transacciones.filter(tipo='ingreso'))
         return render(request, 'caja/cierre_caja.html', {
             'caja': caja,
             'total_final': total_final,
             'total_ingresos': total_ingresos,
+            'cierre_exitoso': True,  # Añadir un indicador de cierre exitoso
         })
 
+    # Calcular el total de ingresos de la caja
     total_final = caja.calcular_total_final()
     total_ingresos = sum(transaccion.monto for transaccion in caja.transacciones.filter(tipo='ingreso'))
-    
+
     return render(request, 'caja/cierre_caja.html', {
         'caja': caja,
         'total_final': total_final,
@@ -618,44 +654,9 @@ def cierre_caja(request, caja_id):
 
 
 
-@login_required
-def registrar_pago(request, pedido_id):
-    caja_abierta = Caja.objects.filter(estado='abierta', usuario=request.user).first()
-    if not caja_abierta:
-        return redirect('apertura_caja')
 
-    # Permitir registrar pago para pedidos en estado 'servido' o 'pendiente'
-    pedido = get_object_or_404(Pedido, id=pedido_id, estado__in=['servido', 'pendiente'])
 
-    # Verificar si el pedido está en proceso por otro usuario
-    if pedido.en_proceso and pedido.usuario_procesando != request.user:
-        messages.error(request, f"Este pedido está siendo procesado por {pedido.usuario_procesando.username}.")
-        return redirect('pedidos_activos')
-    
-    # Marcar el pedido como en proceso y asignar el usuario actual
-    pedido.marcar_en_proceso(request.user)
 
-    if request.method == 'POST':
-        metodo_pago = request.POST.get('metodo_pago')
-        pago = Pago(pedido=pedido, metodo_pago=metodo_pago, monto=pedido.total)
-        pago.save()
-        pedido.estado = 'pagado'
-        pedido.save()
-
-        transaccion = TransaccionCaja(
-            caja=caja_abierta,
-            tipo='ingreso',
-            monto=pago.monto,
-            descripcion=f'Pago de pedido {pedido.id}'
-        )
-        transaccion.save()
-
-        # Marcar el pedido como completado y liberar el proceso
-        pedido.marcar_completado()
-
-        return redirect('consulta_caja', caja_id=caja_abierta.id)
-    
-    return render(request, 'caja/registrar_pago.html', {'pedido': pedido, 'caja': caja_abierta})
 
 
 @login_required
@@ -688,8 +689,24 @@ from django.utils import timezone
 
 def descargar_reporte_caja(request, caja_id):
     caja = get_object_or_404(Caja, id=caja_id)
+    
+    # Calcular los totales por método de pago
+    transacciones = caja.transacciones.all()
+    total_efectivo = sum(t.monto for t in transacciones if t.pago.metodo_pago == 'efectivo')
+    total_tarjeta = sum(t.monto for t in transacciones if t.pago.metodo_pago == 'tarjeta')
+    total_transferencia = sum(t.monto for t in transacciones if t.pago.metodo_pago == 'transferencia')
+    total_final = sum(t.monto for t in transacciones)
+    
+    # Prepare the context
+    context = {
+        'caja': caja,
+        'total_efectivo': total_efectivo,
+        'total_tarjeta': total_tarjeta,
+        'total_transferencia': total_transferencia,
+        'total_final': total_final,
+    }
+
     template_path = 'caja/reporte_caja_pdf.html'
-    context = {'caja': caja}
     
     # Verificar si la caja tiene una fecha de cierre
     if caja.cierre:
@@ -1204,6 +1221,57 @@ def cocinero_dashboard(request):
         'pedidos': pedidos,
     }
     return render(request, 'cocina/cocineros.html', context)
+
+
+
+#Registrar pago.
+
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from .models import Pedido, Pago, Caja, TransaccionCaja
+from .forms import PagoForm
+from django.utils import timezone
+
+@login_required
+def registrar_pago(request, pedido_id):
+    caja_abierta = Caja.objects.filter(estado='abierta', usuario=request.user).first()
+    if not caja_abierta:
+        return redirect('apertura_caja')
+    pedido = get_object_or_404(Pedido, id=pedido_id, estado__in=['servido', 'pendiente'])
+    if request.method == 'POST':
+        metodo_pago = request.POST.get('metodo_pago')
+        monto_pagado = request.POST.get('monto_pagado')
+        if metodo_pago == 'efectivo':
+            try:
+                
+                monto_pagado = float(monto_pagado)
+            except (ValueError, TypeError):
+                messages.error(request, 'El monto pagado no es válido. Por favor ingrese un número.')
+                return redirect('registrar_pago', pedido_id=pedido.id)
+
+            if monto_pagado < pedido.total:
+                messages.error(request, 'El monto pagado no puede ser menor que el total del pedido.')
+                return redirect('registrar_pago', pedido_id=pedido.id)
+        else:
+            monto_pagado = pedido.total  
+        pago = Pago(pedido=pedido, metodo_pago=metodo_pago, monto=monto_pagado)
+        pago.save()
+        pedido.estado = 'pagado'
+        pedido.save()
+        transaccion = TransaccionCaja(
+            caja=caja_abierta,
+            tipo='ingreso',
+            monto=pago.monto,
+            descripcion=f'Pago de pedido {pedido.id}',
+            pago=pago  
+        )
+        transaccion.save()
+
+        messages.success(request, 'Pago registrado con éxito.')
+        return redirect('pedidos_activos')
+
+    return render(request, 'caja/registrar_pago.html', {'pedido': pedido, 'caja': caja_abierta})
 
 
 
