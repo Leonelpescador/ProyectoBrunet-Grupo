@@ -62,17 +62,30 @@ class ModificarPagoForm(forms.ModelForm):
         model = Pago
         fields = ['metodo_pago', 'monto']  # Incluye el campo para modificar el monto si es necesario
 
-# Formulario para Reserva
-class ReservaForm(forms.ModelForm):
-    class Meta:
-        model = Reserva
-        fields = ['mesa', 'fecha_reserva', 'nombre_cliente', 'telefono_cliente', 'estado']
 
-# Formulario para Modificar Reserva
-class ModificarReservaForm(forms.ModelForm):
+#from de reservas  
+from django import forms
+from .models import Reserva
+
+class ReservaForm(forms.ModelForm):
+    fecha_reserva = forms.DateTimeField(
+        widget=forms.DateTimeInput(attrs={'type': 'datetime-local'}),
+        label='Fecha y Hora de la Reserva'
+    )
+
     class Meta:
         model = Reserva
-        fields = ['mesa', 'fecha_reserva', 'nombre_cliente', 'telefono_cliente', 'estado']
+        fields = ['mesa', 'fecha_reserva', 'nombre_cliente', 'telefono_cliente', 'estado', 'numero_personas', 'comentarios']
+
+class ModificarReservaForm(forms.ModelForm):
+    fecha_reserva = forms.DateTimeField(
+        widget=forms.DateTimeInput(attrs={'type': 'datetime-local'}),
+        label='Fecha y Hora de la Reserva'
+    )
+
+    class Meta:
+        model = Reserva
+        fields = ['mesa', 'fecha_reserva', 'nombre_cliente', 'telefono_cliente', 'estado', 'numero_personas', 'comentarios']
 
 # Formulario para Compra
 class CompraForm(forms.ModelForm):

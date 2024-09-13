@@ -346,29 +346,7 @@ def eliminar_reserva(request, reserva_id):
     return render(request, 'reserva/eliminar_reserva.html', {'reserva': reserva})
 
 
-#from de reservas  
-from django import forms
-from .models import Reserva
 
-class ReservaForm(forms.ModelForm):
-    fecha_reserva = forms.DateTimeField(
-        widget=forms.DateTimeInput(attrs={'type': 'datetime-local'}),
-        label='Fecha y Hora de la Reserva'
-    )
-
-    class Meta:
-        model = Reserva
-        fields = ['mesa', 'fecha_reserva', 'nombre_cliente', 'telefono_cliente', 'estado', 'numero_personas', 'comentarios']
-
-class ModificarReservaForm(forms.ModelForm):
-    fecha_reserva = forms.DateTimeField(
-        widget=forms.DateTimeInput(attrs={'type': 'datetime-local'}),
-        label='Fecha y Hora de la Reserva'
-    )
-
-    class Meta:
-        model = Reserva
-        fields = ['mesa', 'fecha_reserva', 'nombre_cliente', 'telefono_cliente', 'estado', 'numero_personas', 'comentarios']
 
 
 #fin de flujo de reserva.

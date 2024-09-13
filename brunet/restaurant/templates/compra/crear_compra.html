@@ -37,23 +37,16 @@
                     <th>Inventario</th>
                     <th>Cantidad</th>
                     <th>Precio Unitario</th>
-                    <th>Total</th> <!-- Nueva columna para el total -->
+                    <th>Eliminar</th>
                 </tr>
             </thead>
             <tbody>
                 {% for form in detalle_formset %}
                 <tr>
                     <td>{{ form.inventario }}</td>
-                    <td>
-                        {{ form.cantidad }}
-                    </td>
-                    <td>
-                        {{ form.precio_unitario }}
-                    </td>
-                    <td>
-                        <!-- Campo de total que se actualizará dinámicamente -->
-                        <input type="text" class="form-control total-item" readonly value="0.00">
-                    </td>
+                    <td>{{ form.cantidad }}</td>
+                    <td>{{ form.precio_unitario }}</td>
+                    <td>{{ form.DELETE }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -74,38 +67,6 @@
 
         checkbox.addEventListener('change', toggleArchivoField);
         toggleArchivoField();
-
-        // Función para calcular el total de cada fila
-        function calculateRowTotal(row) {
-            const cantidadInput = row.querySelector('input[id$="cantidad"]'); // Selector para el campo de cantidad
-            const precioInput = row.querySelector('input[id$="precio_unitario"]'); // Selector para el campo de precio unitario
-            const totalField = row.querySelector('.total-item');
-
-            const cantidad = parseFloat(cantidadInput.value) || 0;
-            const precio = parseFloat(precioInput.value) || 0;
-            const total = cantidad * precio;
-
-            totalField.value = total.toFixed(2); // Actualiza el campo de total
-        }
-
-        // Función para recalcular los totales cuando se cambia la cantidad o el precio unitario
-        function updateTotals() {
-            const rows = document.querySelectorAll('tbody tr'); // Todas las filas de la tabla
-            rows.forEach(row => {
-                const cantidadInput = row.querySelector('input[id$="cantidad"]');
-                const precioInput = row.querySelector('input[id$="precio_unitario"]');
-                
-                // Escuchar cambios en los campos de cantidad y precio
-                cantidadInput.addEventListener('input', () => calculateRowTotal(row));
-                precioInput.addEventListener('input', () => calculateRowTotal(row));
-
-                // Calcular el total inicial por si ya hay valores cargados
-                calculateRowTotal(row);
-            });
-        }
-
-        // Iniciar la función al cargar la página
-        updateTotals();
     });
 </script>
 
