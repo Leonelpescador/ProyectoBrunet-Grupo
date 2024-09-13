@@ -1,11 +1,50 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="form-container">
+<div class="container">
     <h1>Editar Compra</h1>
     <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
-        {{ form.as_p }}
+        <div class="form-group">
+            {{ form.proveedor.label_tag }} {{ form.proveedor }}
+        </div>
+        <div class="form-group">
+            {{ form.total.label_tag }} {{ form.total }}
+        </div>
+        <div class="form-group">
+            {{ form.tiene_documentacion.label_tag }} {{ form.tiene_documentacion }}
+        </div>
+        <div class="form-group" id="archivo-documentacion">
+            {{ form.archivo_documentacion.label_tag }} {{ form.archivo_documentacion }}
+        </div>
+        <div class="form-group">
+            {{ form.detalle.label_tag }} {{ form.detalle }}
+        </div>
+
+        <h3>Detalles de la Compra</h3>
+        {{ detalle_formset.management_form }}
+
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Inventario</th>
+                    <th>Cantidad</th>
+                    <th>Precio Unitario</th>
+                    <th>Eliminar</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for form in detalle_formset %}
+                <tr>
+                    <td>{{ form.inventario }}</td>
+                    <td>{{ form.cantidad }}</td>
+                    <td>{{ form.precio_unitario }}</td>
+                    <td>{{ form.DELETE }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
         <button type="submit" class="btn btn-primary">Guardar Cambios</button>
         <a href="{% url 'compras' %}" class="btn btn-secondary">Cancelar</a>
     </form>

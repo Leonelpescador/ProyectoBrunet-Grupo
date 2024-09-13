@@ -18,13 +18,10 @@ from .views import (
     crear_reserva,
     modificar_reserva,
     eliminar_reserva,
-    editar_compra,
-    eliminar_compra,
     proveedores, 
     editar_proveedor,
     eliminar_proveedor,
     crear_compra,  
-    compras,
     editar_compra,
     eliminar_compra,
     obtener_precio_plato,
@@ -90,6 +87,7 @@ urlpatterns =[
     path('compra/crear/', views.crear_compra, name='crear_compra'),  
     path('compra/editar/<int:pk>/', views.editar_compra, name='editar_compra'),
     path('compra/eliminar/<int:pk>/', views.eliminar_compra, name='eliminar_compra'),
+
     
     
     # Mesa 
@@ -98,6 +96,10 @@ urlpatterns =[
     path('mesa/eliminar/<int:mesa_id>/', views.eliminar_mesa, name='eliminar_mesa'),
     path('mesa/editar/<int:pk>/', views.editar_mesa, name='editar_mesa'),
     
+    #estadisticas
+    path('reportes/generar/', views.generar_reporte, name='generar_reporte'),
+    path('reportes/grafico_ingresos/', views.obtener_datos_grafico_ingresos, name='obtener_datos_grafico_ingresos'),
+    path('reportes/grafico_metodos_pago/', views.obtener_datos_grafico_metodos_pago, name='obtener_datos_grafico_metodos_pago'),
     
     
     # Caja 

@@ -61,6 +61,9 @@
                     <li class="nav-item {% if request.resolver_match.url_name == 'compras' %}active{% endif %}">
                         <a class="nav-link" href="{% url 'compras' %}">Compras</a>
                     </li>
+                    <li class="nav-item {% if request.resolver_match.url_name == 'generar_reporte_estadisticas' %}active{% endif %}">
+                        <a class="nav-link" href="{% url 'generar_reporte' %}">Estadísticas</a>
+                    </li>
                     <li class="nav-item {% if request.resolver_match.url_name == 'cliente' %}active{% endif %}">
                         <a class="nav-link" href="{% url 'cliente' %}">Página del Cliente</a>
                     </li>

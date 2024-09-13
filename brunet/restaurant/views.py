@@ -16,7 +16,9 @@ from .forms import (
     ModificarCompraForm, 
     MesaForm, 
     ProveedorForm, 
-    InventarioForm
+    InventarioForm,
+    DetalleCompraForm
+    
 )
 from django.contrib.auth.models import User
 
@@ -476,43 +478,84 @@ def eliminar_proveedor(request, pk):
 
 
 # Compras
-from django.shortcuts import render, redirect
-from .models import Compra
-from .forms import CompraForm
 
+
+from django.forms import inlineformset_factory
+from .models import Compra, DetalleCompra
+from .forms import CompraForm, DetalleCompraForm
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib.auth.decorators import login_required
+
+from django.forms import inlineformset_factory
+from .models import Compra, DetalleCompra, Inventario
+from .forms import CompraForm, DetalleCompraForm
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
+
+@login_required
 def crear_compra(request):
+    DetalleCompraFormSet = inlineformset_factory(Compra, DetalleCompra, form=DetalleCompraForm, extra=1, can_delete=True)
+
     if request.method == 'POST':
         form = CompraForm(request.POST, request.FILES)
-        if form.is_valid():
-            form.save()
+        detalle_formset = DetalleCompraFormSet(request.POST)  
+
+        if form.is_valid() and detalle_formset.is_valid():
+            compra = form.save()  
+            detalle_formset.instance = compra  
+            detalle_formset.save()
+
+            # Actualizar el inventario
+            for detalle in detalle_formset.cleaned_data:
+                inventario_item = detalle['inventario']
+                cantidad_comprada = detalle['cantidad']
+                
+                # Aumentar la cantidad en el inventario
+                inventario_item.cantidad_actual += cantidad_comprada
+                inventario_item.save()
+
             return redirect('compras')
     else:
         form = CompraForm()
-    
-    return render(request, 'compra/crear_compra.html', {'form': form})
+        detalle_formset = DetalleCompraFormSet()
 
+    return render(request, 'compra/crear_compra.html', {
+        'form': form,
+        'detalle_formset': detalle_formset
+    })
+
+
+@login_required
 def compras(request):
-    compras = Compra.objects.all()
-    for compra in compras:
-        # Determinamos si el archivo adjunto es un PDF
-        if compra.archivo_documentacion:
-            compra.es_pdf = compra.archivo_documentacion.url.lower().endswith('.pdf')
-        else:
-            compra.es_pdf = False
-    
-    return render(request, 'compra/compras.html', {'compras': compras})
+    lista_compras = Compra.objects.all()
+    return render(request, 'compra/compras.html', {'compras': lista_compras})
+
+
 
 @login_required
 def editar_compra(request, pk):
     compra = get_object_or_404(Compra, pk=pk)
+
+    # Crear el formset para manejar DetalleCompra asociado a esta compra
+    DetalleCompraFormSet = inlineformset_factory(Compra, DetalleCompra, form=DetalleCompraForm, extra=1, can_delete=True)
+
     if request.method == 'POST':
         form = CompraForm(request.POST, request.FILES, instance=compra)
-        if form.is_valid():
-            form.save()
+        detalle_formset = DetalleCompraFormSet(request.POST, instance=compra)
+
+        if form.is_valid() and detalle_formset.is_valid():
+            form.save()  # Guardamos la compra editada
+            detalle_formset.save()  # Guardamos los detalles de la compra
             return redirect('compras')
     else:
         form = CompraForm(instance=compra)
-    return render(request, 'compra/editar_compra.html', {'form': form})
+        detalle_formset = DetalleCompraFormSet(instance=compra)
+
+    return render(request, 'compra/editar_compra.html', {
+        'form': form,
+        'detalle_formset': detalle_formset
+    })
+    
 @login_required
 def eliminar_compra(request, pk):
     compra = get_object_or_404(Compra, pk=pk)
@@ -1272,6 +1315,89 @@ def registrar_pago(request, pedido_id):
         return redirect('pedidos_activos')
 
     return render(request, 'caja/registrar_pago.html', {'pedido': pedido, 'caja': caja_abierta})
+
+
+#estadisticas
+
+from django.shortcuts import render
+from .forms import ReporteFiltroForm
+from .models import Caja, Pedido, TransaccionCaja, Usuario
+from django.db.models import Sum
+
+def generar_reporte(request):
+    form = ReporteFiltroForm(request.POST or None)
+    reportes = []
+    
+    if form.is_valid():
+        fecha_inicio = form.cleaned_data['fecha_inicio']
+        fecha_fin = form.cleaned_data['fecha_fin']
+        usuario = form.cleaned_data['usuario']
+        
+        # Filtro de cajas abiertas o cerradas
+        cajas = Caja.objects.filter(apertura__date__gte=fecha_inicio, apertura__date__lte=fecha_fin)
+        
+        if usuario:
+            cajas = cajas.filter(usuario=usuario)
+        
+        for caja in cajas:
+            transacciones = caja.transacciones.all()
+            pedidos = Pedido.objects.filter(fecha_pedido__gte=caja.apertura, fecha_pedido__lte=caja.cierre or timezone.now())
+
+            total_ingresos = transacciones.filter(tipo='ingreso').aggregate(total=Sum('monto'))['total'] or 0
+            total_egresos = transacciones.filter(tipo='egreso').aggregate(total=Sum('monto'))['total'] or 0
+            
+            reportes.append({
+                'caja': caja,
+                'total_ingresos': total_ingresos,
+                'total_egresos': total_egresos,
+                'pedidos': pedidos,
+            })
+    
+    return render(request, 'reportes/generar_reporte.html', {
+        'form': form,
+        'reportes': reportes
+    })
+
+
+import plotly.express as px
+from django.http import JsonResponse
+from django.db.models import Sum
+from .models import TransaccionCaja
+
+def obtener_datos_grafico_ingresos(request):
+    # Obtener los ingresos por día
+    ingresos_por_dia = TransaccionCaja.objects.filter(tipo='ingreso').values('fecha').annotate(total_ingresos=Sum('monto'))
+
+    # Extraer los datos
+    fechas = [ingreso['fecha'].strftime('%Y-%m-%d') for ingreso in ingresos_por_dia]
+    total_ingresos = [ingreso['total_ingresos'] for ingreso in ingresos_por_dia]
+
+    # Crear gráfico con Plotly
+    fig = px.line(x=fechas, y=total_ingresos, labels={'x': 'Fecha', 'y': 'Ingresos'}, title='Ingresos Totales por Día')
+
+    # Convertir el gráfico a JSON
+    graph_json = fig.to_json()
+
+    return JsonResponse(graph_json, safe=False)
+
+def obtener_datos_grafico_metodos_pago(request):
+    # Obtener los totales por método de pago
+    metodos_pago_totales = TransaccionCaja.objects.filter(tipo='ingreso').exclude(pago__metodo_pago__isnull=True).values('pago__metodo_pago').annotate(total=Sum('monto'))
+
+
+    # Extraer los datos
+    metodos_pago = [metodo['pago__metodo_pago'] for metodo in metodos_pago_totales]
+    totales = [metodo['total'] for metodo in metodos_pago_totales]
+
+    # Crear gráfico con Plotly
+    fig = px.pie(values=totales, names=metodos_pago, title='Métodos de Pago')
+
+    # Convertir el gráfico a JSON
+    graph_json = fig.to_json()
+
+    return JsonResponse(graph_json, safe=False)
+
+
 
 
 
