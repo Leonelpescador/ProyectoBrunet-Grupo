@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+{% block content %}
+<div class="container mt-5">
+    <h2>Editar Usuario</h2>
+    <form method="post" class="mt-4">
+        {% csrf_token %}
+        
+        <div class="mb-3">
+            {{ form.username.label_tag }}
+            {{ form.username|add_class:"form-control" }}
+        </div>
+        
+        <div class="mb-3">
+            {{ form.email.label_tag }}
+            {{ form.email|add_class:"form-control" }}
+        </div>
+        
+        <div class="mb-3">
+            {{ form.tipo_usuario.label_tag }}
+            {{ form.tipo_usuario|add_class:"form-select" }}
+        </div>
+        
+        <div class="mb-3">
+            {{ form.estado.label_tag }}
+            {{ form.estado|add_class:"form-select" }}
+        </div>
+        
+        <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+        <a href="{% url 'listar_usuarios' %}" class="btn btn-secondary">Cancelar</a>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="mb-4">Gestión de Inventario</h2>
+    <a href="{% url 'inventario' %}" class="btn btn-primary mb-4">Lista de Inventario</a>
+
+    {% if messages %}
+    <div class="alert alert-dismissible fade show mt-3" role="alert">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">
+            {{ message }}
+        </div>
+        {% endfor %}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endif %}
+
+    {% if errores %}
+    <div class="alert alert-danger mt-3">
+        <h4>Errores encontrados:</h4>
+        <ul>
+            {% for error in errores %}
+            <li>{{ error }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    {% if advertencias %}
+    <div class="alert alert-warning mt-3">
+        <h4>Advertencias:</h4>
+        <ul>
+            {% for advertencia in advertencias %}
+            <li>{{ advertencia }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <h3 class="card-title">Cargar/Actualizar Inventario</h3>
+            <form id="inventarioForm" method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label for="archivo_excel" class="form-label">Subir Archivo Excel</label>
+                    <input type="file" class="form-control" id="archivo_excel" name="archivo_excel" accept=".xlsx, .xls">
+                </div>
+                <button type="submit" class="btn btn-success">Cargar/Actualizar Inventario</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <h3 class="card-title">Descargar Plantilla para Nuevos Productos</h3>
+            <a href="{% url 'descargar_plantilla_inventario' %}" class="btn btn-info">Descargar Plantilla</a>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <h3 class="card-title">Exportar Inventario Actual</h3>
+            <a href="{% url 'exportar_inventario' %}" class="btn btn-warning">Exportar Inventario</a>
+        </div>
+    </div>
+
+    
+    </div>
+</div>
+
+<script>
+    document.getElementById('inventarioForm').addEventListener('submit', function(event) {
+        var fileInput = document.getElementById('archivo_excel');
+        if (!fileInput.value) {
+            alert('Por favor, selecciona un archivo Excel antes de proceder.');
+            event.preventDefault();  // Evita que el formulario se envíe
+        }
+    });
+</script>
+{% endblock %}

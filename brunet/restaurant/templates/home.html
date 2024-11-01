@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="d-flex justify-content-start mb-3">
+        <div class="alert alert-info">
+            Hola {{ request.user.username }}
+        </div>
+    </div>
+
+    <h1 class="text-center mb-4">Mesas del Restaurante</h1>
+
+    <div class="caja-container mb-4">
+        {% if request.user.is_superuser or request.user.tipo_usuario == 'admin' or request.user.tipo_usuario == 'cajero' %}
+            {% if not caja_abierta %}
+                <div class="alert alert-warning text-center">
+                    No tienes una caja abierta actualmente.
+                </div>
+                <div class="text-center">
+                    <a href="{% url 'apertura_caja' %}" class="btn btn-success">Abrir Caja</a>
+                </div>
+            {% else %}
+                <div class="alert alert-success text-center">
+                    Caja abierta por {{ caja_abierta.usuario.username }} desde {{ caja_abierta.apertura|date:"d/m/Y H:i" }}
+                </div>
+                <div class="d-flex justify-content-center gap-2">
+                    {% if caja_abierta.transacciones.exists %}
+                        <a href="{% url 'consulta_caja' caja_abierta.id %}" class="btn btn-primary">Consultar Caja</a>
+                    {% else %}
+                        <button type="button" class="btn btn-primary" onclick="alert('No hay movimientos registrados en esta caja.');">Consultar Caja</button>
+                    {% endif %}
+                    <a href="{% url 'cierre_caja' caja_abierta.id %}" class="btn btn-danger" onclick="return confirm('¿Estás seguro de que deseas cerrar la caja?');">Cerrar Caja</a>
+                </div>
+            {% endif %}
+        {% endif %}
+    </div>
+    <div class="text-center mb-4">
+        {% if request.user.is_superuser or request.user.tipo_usuario == 'admin' or request.user.tipo_usuario == 'cajero' %}
+            <a href="{% url 'pedidos_activos' %}" class="btn btn-success">Pedidos Activos</a>
+        {% endif %}
+    </div>
+
+    <div class="row">
+        {% for mesa in mesas %}
+            <div class="col-md-4 mb-4">
+                <div class="card mesa-card {% if mesa.estado == 'disponible' %}border-success{% elif mesa.estado == 'ocupada' %}border-danger{% else %}border-warning{% endif %}">
+                    <div class="card-body text-center">
+                        <h5 class="card-title {% if mesa.estado == 'disponible' %}text-success{% elif mesa.estado == 'ocupada' %}text-danger{% else %}text-warning{% endif %}">
+                            Mesa {{ mesa.numero_mesa }}
+                        </h5>
+                        <p>Capacidad: {{ mesa.capacidad }} personas</p>
+                        <p>{{ mesa.get_estado_display }}</p>
+                    </div>
+                    <div class="menu-desplegable" style="display:none;">
+                        <a href="{% url 'crear_pedido' mesa_id=mesa.id %}" class="btn btn-custom">Crear Pedido</a>
+                        {% if request.user.is_superuser or request.user.tipo_usuario == 'admin' or request.user.tipo_usuario == 'cajero' %}
+                            <a href="{% url 'crear_reserva' %}" class="btn btn-custom">Crear Reserva</a>
+                            <a href="{% url 'editar_mesa' mesa.id %}" class="btn btn-custom">Editar Mesa</a>
+                            {% if mesa.estado == 'ocupada' and mesa.pedido_actual %}
+                                <a href="{% url 'registrar_pago' mesa.pedido_actual.id %}" class="btn btn-custom btn-success">Registrar Pago</a>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const mesas = document.querySelectorAll('.mesa-card');
+
+        mesas.forEach(mesa => {
+            mesa.addEventListener('click', function (event) {
+                event.stopPropagation();
+                closeAllMenus();
+
+                const menu = mesa.querySelector('.menu-desplegable');
+                if (menu) {
+                    menu.style.display = 'block';
+                }
+            });
+        });
+
+        document.addEventListener('click', closeAllMenus);
+
+        function closeAllMenus() {
+            document.querySelectorAll('.menu-desplegable').forEach(menu => {
+                menu.style.display = 'none';
+            });
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+{% block content %}
+<div class="container mt-5">
+    <h2>Restablecer Contraseña para {{ usuario.username }}</h2>
+    <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+            {{ form.nueva_contraseña.label_tag }}
+            {{ form.nueva_contraseña }}
+            {% if form.nueva_contraseña.errors %}
+                <div class="text-danger">{{ form.nueva_contraseña.errors }}</div>
+            {% endif %}
+        </div>
+        <div class="mb-3">
+            {{ form.confirmar_contraseña.label_tag }}
+            {{ form.confirmar_contraseña }}
+            {% if form.confirmar_contraseña.errors %}
+                <div class="text-danger">{{ form.confirmar_contraseña.errors }}</div>
+            {% endif %}
+        </div>
+        <button type="submit" class="btn btn-primary">Restablecer Contraseña</button>
+        <a href="{% url 'listar_usuarios' %}" class="btn btn-secondary">Cancelar</a>
+    </form>
+</div>
+{% endblock %}

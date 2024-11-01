@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container my-5">
+    <h1 class="text-center mb-4" style="font-size: 24px; color: #333;">Reservas</h1>
+
+    <div class="text-center mb-4">
+        <a href="{% url 'crear_reserva' %}" class="btn btn-primary">Crear Nueva Reserva</a>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Cliente</th>
+                    <th>Mesa</th>
+                    <th>Fecha y Hora</th>
+                    <th>Estado</th>
+                    <th>Comentarios</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for reserva in reservas %}
+                    <tr>
+                        <td>{{ reserva.nombre_cliente }}</td>
+                        <td>{{ reserva.mesa.numero_mesa }}</td>
+                        <td>{{ reserva.fecha_reserva|date:"d/m/Y H:i" }}</td>
+                        <td>{{ reserva.estado }}</td>
+                        <td>{{ reserva.comentarios|default_if_none:"Sin comentarios"}}</td>
+                        <td>
+                            <a href="{% url 'editar_reserva' reserva.id %}" class="btn btn-sm btn-primary">Modificar</a>
+                            <a href="{% url 'eliminar_reserva' reserva.id %}" class="btn btn-sm btn-danger">Eliminar</a>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1 style="text-align: center; font-size: 24px; color: #333; margin-top: 20px;">Crear Reserva</h1>
+<div class="form-container" style="max-width: 600px; margin: 20px auto; padding: 20px; background-color: #f7f9fc; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
+    <form method="post">
+        {% csrf_token %}
+        <div style="margin-bottom: 15px;">
+            {{ form.as_p }}
+        </div>
+        <button type="submit" class="btn" style="background-color: #3498db; color: #fff; padding: 12px 24px; border-radius: 5px; border: none; cursor: pointer; font-size: 16px; text-align: center; text-decoration: none; display: block; width: 100%; transition: background-color 0.3s ease;">
+            Crear Reserva
+        </button>
+    </form>
+</div>
+{% endblock %}
+<style></style>

@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container my-5">
+    <h1 class="text-center mb-4">Mesas del Restaurante</h1>
+    <a href="{% url 'crear_mesa' %}" class="btn btn-primary mb-4">Agregar Nueva Mesa</a>
+
+    <section id="mesas" class="container table-status">
+        <div class="row">
+            {% for mesa in mesas %}
+                <div class="col-md-4 mb-4">
+                    <div class="table-card {% if mesa.estado == 'disponible' %}available{% elif mesa.estado == 'ocupada' %}occupied{% else %}reserved{% endif %}">
+                        <h5>Mesa {{ mesa.numero_mesa }}</h5>
+                        <p>Capacidad: {{ mesa.capacidad }} personas</p>
+                        <p>{{ mesa.get_estado_display }}</p>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <table class="table table-striped mt-4">
+        <thead>
+            <tr>
+                <th>Número de Mesa</th>
+                <th>Capacidad</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for mesa in mesas %}
+            <tr>
+                <td>{{ mesa.numero_mesa }}</td>
+                <td>{{ mesa.capacidad }}</td>
+                <td>{{ mesa.get_estado_display }}</td>
+                <td>
+                    <a href="{% url 'editar_mesa' mesa.id %}" class="btn btn-sm btn-warning">Editar</a>
+                    <a href="{% url 'eliminar_mesa' mesa.id %}" class="btn btn-sm btn-danger" onclick="return confirm('¿Estás seguro de que deseas eliminar esta mesa?');">Eliminar</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
