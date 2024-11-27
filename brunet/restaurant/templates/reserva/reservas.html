@@ -29,6 +29,7 @@
                         <td>{{ reserva.estado }}</td>
                         <td>{{ reserva.comentarios|default_if_none:"Sin comentarios"}}</td>
                         <td>
+                            <a href="{% url 'modificar_estado_reserva' reserva.id %}" class="btn btn-sm btn-primary">Cambiar Estado</a>
                             <a href="{% url 'editar_reserva' reserva.id %}" class="btn btn-sm btn-primary">Modificar</a>
                             <a href="{% url 'eliminar_reserva' reserva.id %}" class="btn btn-sm btn-danger">Eliminar</a>
                         </td>

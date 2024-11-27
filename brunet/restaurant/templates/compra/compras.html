@@ -169,47 +169,83 @@
     }
 </style>
 
-<div class="compras-container">
-    <h1>Compras</h1>
-    <div>
-        <a href="{% url 'crear_compra' %}" class="btn btn-primary">Registrar Nueva Compra</a>
-        <a href="{% url 'inventario' %}" class="btn btn-primary">inventario</a>
-        <a href="{% url 'proveedores' %}" class="btn btn-secondary">Proveedores</a>
+<div class="container compras-container mt-5">
+    <h1 class="text-center mb-4">Compras</h1>
+    <div class="mb-3 text-center">
+        <a href="{% url 'crear_compra' %}" class="btn btn-primary me-2">Registrar Nueva Compra</a>
+        <a href="{% url 'inventario' %}" class="btn btn-primary me-2">Inventario</a>
+        <a href="{% url 'proveedores' %}" class="btn btn-secondary me-2">Proveedores</a>
         <a href="{% url 'home' %}" class="btn btn-secondary">Volver a Inicio</a>
     </div>
-    <ul class="compras-list">
+
+    {% if compras %}
+    <div class="row row-cols-1 row-cols-md-3 g-4">
         {% for compra in compras %}
-        <li class="compra-item">
-            <span>{{ compra.proveedor.nombre_proveedor }}</span> 
-            <span>{{ compra.fecha_compra }}</span>
-            <span>${{ compra.total }}</span>
-            <div class="detalle">
-                {{ compra.detalle }} 
+        <div class="col">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">{{ compra.proveedor.nombre_proveedor }}</h5>
+                    <p class="card-text"><strong>Fecha:</strong> {{ compra.fecha_compra }}</p>
+                    <p class="card-text"><strong>Total:</strong> ${{ compra.total }}</p>
+                    <p class="card-text"><strong>Detalles:</strong> {{ compra.detalle|default:"Sin detalles adicionales" }}</p>
+                    {% if compra.tiene_documentacion %}
+                    <p class="card-text text-success">Documentación: Sí</p>
+                    {% else %}
+                    <p class="card-text text-danger">Documentación: No</p>
+                    {% endif %}
+                </div>
+                <div class="card-footer d-flex justify-content-between">
+                    <a href="{% url 'eliminar_compra' compra.id %}" class="btn btn-danger btn-sm">Eliminar</a>
+                    {% if compra.archivo_documentacion %}
+                    <a href="{{ compra.archivo_documentacion.url }}" class="btn btn-info btn-sm btn-view" data-file="{{ compra.archivo_documentacion.url }}">Ver</a>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    <h6>Detalles de los productos:</h6>
+                    <ul class="list-group">
+                        {% for detalle in compra.detallecompra_set.all %}
+                        <li class="list-group-item d-flex justify-content-between">
+                            <div>
+                                <strong>{{ detalle.inventario.nombre_producto }}</strong>
+                                <p class="mb-0 text-muted">Cantidad: {{ detalle.cantidad }}</p>
+                                <p class="mb-0 text-muted">Precio Unitario: ${{ detalle.precio_unitario }}</p>
+                            </div>
+                            <div>
+                                <p class="mb-0 text-end">Subtotal: ${{ detalle.subtotal }}</p>
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
             </div>
-            <div class="compra-actions">
-                <a href="{% url 'editar_compra' compra.id %}" class="btn-edit">Editar</a>
-                <a href="{% url 'eliminar_compra' compra.id %}" class="btn-delete">Eliminar</a>
-                {% if compra.archivo_documentacion %}
-                <a href="{{ compra.archivo_documentacion.url }}" class="btn-view" data-file="{{ compra.archivo_documentacion.url }}" download>Ver</a>
-                {% endif %}
-            </div>
-        </li>
+        </div>
         {% endfor %}
-    </ul>
+    </div>
+    {% else %}
+    <p class="text-center text-muted">No hay compras registradas.</p>
+    {% endif %}
 </div>
 
-<div id="previewModal" class="modal">
-  <div class="modal-content">
-    <span class="close">&times;</span>
-    <div id="previewContent"></div>
-  </div>
+<!-- Modal -->
+<div id="previewModal" class="modal fade" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Previsualización</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body" id="previewContent"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        const modal = document.getElementById('previewModal');
+        const modal = new bootstrap.Modal(document.getElementById('previewModal'));
         const previewContent = document.getElementById('previewContent');
-        const closeBtn = document.querySelector('.modal .close');
 
         document.querySelectorAll('.btn-view').forEach(function (viewButton) {
             viewButton.addEventListener('click', function (event) {
@@ -220,31 +256,17 @@
                 previewContent.innerHTML = '';
 
                 if (fileExtension === 'pdf') {
-                    window.open(fileUrl, '_blank');
+                    previewContent.innerHTML = `<iframe src="${fileUrl}" class="w-100" style="height:500px;"></iframe>`;
                 } else if (['jpg', 'jpeg', 'png', 'gif'].includes(fileExtension)) {
-                    const img = document.createElement('img');
-                    img.src = fileUrl;
-                    img.style.width = '100%';
-                    previewContent.appendChild(img);
-                    modal.style.display = 'block';
+                    previewContent.innerHTML = `<img src="${fileUrl}" class="img-fluid" alt="Previsualización">`;
                 } else {
-                    const p = document.createElement('p');
-                    p.textContent = 'Previsualización no disponible para este tipo de archivo. Haz clic en el enlace para descargar.';
-                    previewContent.appendChild(p);
-                    modal.style.display = 'block';
+                    previewContent.innerHTML = '<p>No se puede previsualizar este tipo de archivo.</p>';
                 }
+
+                modal.show();
             });
-        });
-
-        closeBtn.addEventListener('click', function () {
-            modal.style.display = 'none';
-        });
-
-        window.addEventListener('click', function (event) {
-            if (event.target === modal) {
-                modal.style.display = 'none';
-            }
         });
     });
 </script>
+
 {% endblock %}

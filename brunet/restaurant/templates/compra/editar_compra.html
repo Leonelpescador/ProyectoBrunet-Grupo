@@ -1,33 +1,40 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="container">
-    <h1>Editar Compra</h1>
+<div class="container mt-5">
+    <h1 class="mb-4">Editar Compra</h1>
     <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
-        <div class="form-group">
-            {{ form.proveedor.label_tag }} {{ form.proveedor }}
+        
+        <!-- Información de la Compra -->
+        <div class="mb-3">
+            <label for="{{ form.proveedor.id_for_label }}" class="form-label">{{ form.proveedor.label }}</label>
+            {{ form.proveedor }}
         </div>
-        <div class="form-group">
-            {{ form.total.label_tag }} {{ form.total }}
+        <div class="mb-3">
+            <label for="{{ form.total.id_for_label }}" class="form-label">{{ form.total.label }}</label>
+            {{ form.total }}
         </div>
-        <div class="form-group">
-            {{ form.tiene_documentacion.label_tag }} {{ form.tiene_documentacion }}
+        <div class="mb-3">
+            <label for="{{ form.tiene_documentacion.id_for_label }}" class="form-label">{{ form.tiene_documentacion.label }}</label>
+            {{ form.tiene_documentacion }}
         </div>
-        <div class="form-group" id="archivo-documentacion">
-            {{ form.archivo_documentacion.label_tag }} {{ form.archivo_documentacion }}
+        <div class="mb-3" id="archivo-documentacion">
+            <label for="{{ form.archivo_documentacion.id_for_label }}" class="form-label">{{ form.archivo_documentacion.label }}</label>
+            {{ form.archivo_documentacion }}
         </div>
-        <div class="form-group">
-            {{ form.detalle.label_tag }} {{ form.detalle }}
+        <div class="mb-3">
+            <label for="{{ form.detalle.id_for_label }}" class="form-label">{{ form.detalle.label }}</label>
+            {{ form.detalle }}
         </div>
 
-        <h3>Detalles de la Compra</h3>
+        <!-- Detalles de la Compra -->
+        <h3 class="mt-4 mb-3">Detalles de la Compra</h3>
         {{ detalle_formset.management_form }}
-
-        <table class="table">
-            <thead>
+        <table class="table table-bordered">
+            <thead class="table-light">
                 <tr>
-                    <th>Inventario</th>
+                    <th>Producto</th>
                     <th>Cantidad</th>
                     <th>Precio Unitario</th>
                     <th>Eliminar</th>
@@ -44,9 +51,39 @@
                 {% endfor %}
             </tbody>
         </table>
+        <div class="mb-3">
+            <button type="button" class="btn btn-success" id="addRow">Agregar Producto</button>
+        </div>
 
+        <!-- Botones de acción -->
         <button type="submit" class="btn btn-primary">Guardar Cambios</button>
         <a href="{% url 'compras' %}" class="btn btn-secondary">Cancelar</a>
     </form>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const addRowButton = document.getElementById('addRow');
+        if (addRowButton) {
+            addRowButton.addEventListener('click', function () {
+                const formsetCount = document.querySelectorAll('tbody tr').length;
+                const totalForms = document.getElementById('id_form-TOTAL_FORMS');
+                const newFormIndex = formsetCount;
+
+                if (totalForms) {
+                    const formsetRow = document.querySelector('tbody tr').cloneNode(true);
+                    formsetRow.querySelectorAll('input, select').forEach(input => {
+                        const newName = input.name.replace(/\d+/, newFormIndex);
+                        const newId = input.id.replace(/\d+/, newFormIndex);
+                        input.name = newName;
+                        input.id = newId;
+                        if (input.type !== 'hidden') input.value = '';
+                    });
+                    totalForms.value = newFormIndex + 1;
+                    document.querySelector('tbody').appendChild(formsetRow);
+                }
+            });
+        }
+    });
+</script>
 {% endblock %}

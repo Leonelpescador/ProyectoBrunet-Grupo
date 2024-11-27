@@ -26,7 +26,8 @@ from .views import (
     eliminar_compra,
     obtener_precio_plato,
     marcar_servido,
-    crear_categoria, eliminar_categoria, listar_categorias, cocinero_dashboard, nuevos_pedidos, restablecer_contraseña
+    crear_categoria, eliminar_categoria, listar_categorias, cocinero_dashboard, nuevos_pedidos, restablecer_contraseña,
+   
 )
 
 urlpatterns =[
@@ -54,12 +55,13 @@ urlpatterns =[
     path('pago/crear/<int:pedido_id>/', views.crear_pago, name='crear_pago'),
     path('pago/modificar/<int:pago_id>/', views.modificar_pago, name='modificar_pago'),
     path('pago/eliminar/<int:pago_id>/', views.eliminar_pago, name='eliminar_pago'),
-
+   
 
     # Reserva 
     path('reserva/crear/', views.crear_reserva, name='crear_reserva'),
     path('reserva/editar/<int:reserva_id>/', views.modificar_reserva, name='editar_reserva'),
     path('reserva/eliminar/<int:reserva_id>/', views.eliminar_reserva, name='eliminar_reserva'),
+    path('reserva/estado/<int:reserva_id>/', views.modificar_estado_reserva, name='modificar_estado_reserva'),
     path('reservas/', views.reservas, name='reservas'),
 
 

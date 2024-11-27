@@ -87,6 +87,13 @@ class ModificarReservaForm(forms.ModelForm):
         model = Reserva
         fields = ['mesa', 'fecha_reserva', 'nombre_cliente', 'telefono_cliente', 'estado', 'numero_personas', 'comentarios']
 
+#cambia el estado de la reserva solamente
+class CambiarEstadoReservaForm(forms.ModelForm):
+    class Meta:
+        model = Reserva
+        fields = [ 'estado']
+
+
 # Formulario para Compra
 class CompraForm(forms.ModelForm):
     class Meta:
@@ -94,7 +101,7 @@ class CompraForm(forms.ModelForm):
         fields = ['proveedor', 'total', 'tiene_documentacion', 'archivo_documentacion', 'detalle']
         widgets = {
             'proveedor': forms.Select(attrs={'class': 'form-control'}),
-            'total': forms.NumberInput(attrs={'class': 'form-control'}),
+            'total': forms.NumberInput(attrs={'class': 'form-control', 'readonly': 'readonly'}),
             'tiene_documentacion': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'archivo_documentacion': forms.ClearableFileInput(attrs={'class': 'form-control'}),
             'detalle': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),

@@ -263,6 +263,8 @@ class Compra(models.Model):
 
     def __str__(self):
         return f"Compra de {self.proveedor.nombre_proveedor} por ${self.total}"
+    
+    
 class DetalleCompra(models.Model):
     compra = models.ForeignKey(Compra, on_delete=models.CASCADE)
     inventario = models.ForeignKey(Inventario, on_delete=models.CASCADE)

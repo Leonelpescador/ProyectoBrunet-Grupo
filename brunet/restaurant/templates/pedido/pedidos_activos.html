@@ -60,13 +60,16 @@
                                             <a href="{% url 'registrar_pago' pedido.id %}" class="btn btn-success mb-1">Registrar Pago</a>
                                         {% endif %}
                                     {% endif %}
+                                    <!---->
+                                    
                                 {% else %}
                                     <span class="badge bg-info text-dark">En proceso por {{ pedido.usuario_procesando.username }}</span>
                                 {% endif %}
                             </td>
                             
-                        </tr>
+                       
                     {% endfor %}
+                    
                 </tbody>
             </table>
         </div>
