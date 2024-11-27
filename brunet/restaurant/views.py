@@ -545,6 +545,13 @@ def compras(request):
     lista_compras = Compra.objects.all()
     return render(request, 'compra/compras.html', {'compras': lista_compras})
 
+@login_required
+def eliminar_compra(request, pk):
+    compra = get_object_or_404(Compra, pk=pk)
+    if request.method == 'POST':
+        compra.delete()
+        return redirect('compras')
+    return render(request, 'compra/eliminar_compra.html', {'compra': compra})
 
 @login_required
 def editar_compra(request, pk):
