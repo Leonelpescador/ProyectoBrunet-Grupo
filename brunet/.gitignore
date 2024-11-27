@@ -1,0 +1,26 @@
+# Ignorar entornos virtuales
+venv/
+*.pyc
+__pycache__/
+
+# Ignorar archivos de configuración sensible
+.env
+
+# Ignorar bases de datos locales
+db.sqlite3
+
+# Ignorar migraciones
+*.log
+migrations/
+
+# Ignorar archivos estáticos y de medios generados automáticamente
+staticfiles/
+media/
+
+# Archivos del sistema operativo
+.DS_Store
+Thumbs.db
+
+# Archivos de configuración de IDE
+.vscode/
+.idea/

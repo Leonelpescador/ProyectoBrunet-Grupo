@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1 style="text-align: center; font-size: 24px; color: #333;">Cambiar Estado de Reserva</h1>
+<div class="form-container" style="max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f7f9fc; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
+    <p><strong>Fecha y Hora de la Reserva:</strong> {{ reserva.fecha_reserva|date:"d/m/Y H:i" }}</p>
+    <p><strong>Nombre del Cliente:</strong> {{ reserva.nombre_cliente }}</p>
+    <p><strong>Mesa:</strong> {{ reserva.mesa.numero_mesa }}</p>
+    
+    <form method="post">
+        {% csrf_token %}
+        <div style="margin-bottom: 15px;">
+            {{ form.as_p }}
+        </div>
+        <button type="submit" class="btn" style="background-color: #3498db; color: #fff; padding: 10px 20px; border-radius: 5px; border: none; cursor: pointer; font-size: 16px; text-align: center; text-decoration: none; display: inline-block; transition: background-color 0.3s ease;">
+            Guardar Cambios
+        </button>
+    </form>
+</div>
+{% endblock %}
