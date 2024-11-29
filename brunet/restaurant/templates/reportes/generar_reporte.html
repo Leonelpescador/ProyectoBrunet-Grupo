@@ -28,12 +28,11 @@
             <table class="table table-bordered table-striped">
                 <thead>
                     <tr>
-                        <th># Caja</th>
+                        <th>Caja</th>
                         <th>Usuario</th>
                         <th>Apertura</th>
                         <th>Cierre</th>
                         <th>Total Ingresos</th>
-                        <th>Total Egresos</th>
                         <th>Pedidos Realizados</th>
                     </tr>
                 </thead>
@@ -45,7 +44,6 @@
                         <td>{{ reporte.caja.apertura }}</td>
                         <td>{{ reporte.caja.cierre|default:"En proceso" }}</td>
                         <td>${{ reporte.total_ingresos }}</td>
-                        <td>${{ reporte.total_egresos }}</td>
                         <td>
                             <ul>
                                 {% for pedido in reporte.pedidos %}
